@@ -1,0 +1,168 @@
+#include"JB_Inference.h"
+#include"check.h"
+#include<string.h>
+#include<stdlib.h>
+#include<check.h>
+#include<limits.h>
+
+//Globals
+char *jbhome;
+char *dirname;
+/******************************************************************************
+ ******************************************************************************
+ *** Test Setup Code
+ ******************************************************************************
+ *****************************************************************************/
+
+
+//Helper Functions
+char *MulInd_ToString(MulInd *this){
+  int i, j;
+  int **qindices = this->secondIndices;
+  char *msg = "";
+  char buf[10];
+  for(i =0; i < this->firstIndices; i++){
+    sprintf(buf, "%i :", i);
+    msg = strcatLK(msg, buf, "\n");
+    for(j =0; j < this->mulSize; j++){
+      int qindex = qindices[i][j];
+      sprintf(buf, "%i", qindex);
+      msg = strcatLK(msg, buf," ");
+    }
+  }
+  return msg;
+}
+
+
+char *Pot_ToString(Pot *this){
+  int i;
+  char *msg = jballoc( strlen(this->label) + 1 + (32 * this->tableSize));
+  msg[0] = '\0';
+  strcat(msg, this->label);
+  strcat(msg, " ");
+  char buf[32];
+  for(i = 0; i < this->tableSize; i++){
+    sprintf(buf ,"%f ", this->valueData.tabData[i]);
+    strcat(msg, buf);
+  }
+  return msg;
+}
+
+
+void setup_resource_paths(){
+  char *resPath = "res/test/JB_Inference";
+  jbhome = getenv("JBHOME");
+  dirname = pathJoin(jbhome,resPath);  
+
+}
+
+
+
+void setup (void)
+{ 
+   setup_resource_paths();
+}
+
+void teardown (void)
+{
+ 
+}
+
+START_TEST (Test_BNet_StateSpaceWeightedElimOrdering){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_StateSpaceWeightedElimOrdering\n");
+  printf("************************************\n");
+  printf("%s\n",VertexOrdering_ToString(elim_order));
+}END_TEST
+ 
+START_TEST (Test_BNet_BuildElimTree){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  char *outFileName = pathJoin(dirname,"BNMoral1Out.dot");
+  Graph_Write(bn->moral,outFileName);
+  outFileName = pathJoin(dirname,"BNElimTreeTest1Out.dot");
+  Graph_Write(bn->elimTree,outFileName);
+}END_TEST
+
+START_TEST (Test_BNet_InitializePotentials){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  BNet_InitializePotentials(bn);
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_InitializePotentials\n");
+  printf("************************************\n");
+  int i;
+  printf("\n************************************\n");
+  printf("Clique Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numCliques; i++){
+    printf("\n%s\n",Pot_ToString(*(bn->cliquePots[i])));
+  }
+  printf("\n************************************\n");
+  printf("Seperator Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numSeps; i++){
+    printf("\n %s \n",Pot_ToString(*(bn->seperatorPots[i])));
+  }
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentials(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute\n");
+  printf("************************************\n");
+  
+  Print_BNet(bn);
+
+  //collect
+  BNet_CollectEvidence(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+
+  //distribute
+  BNet_DistributeEvidence(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+}END_TEST
+
+Suite *jt_suite (void)
+{
+  Suite *s = suite_create ("Inference");
+  /* Core test case */
+  TCase *InfCore = tcase_create ("InfCore");
+  tcase_add_checked_fixture (InfCore, setup, teardown);
+  tcase_add_test (InfCore, Test_BNet_StateSpaceWeightedElimOrdering);
+  tcase_add_test (InfCore, Test_BNet_BuildElimTree);
+  tcase_add_test (InfCore, Test_BNet_InitializePotentials);
+  tcase_add_test (InfCore, Test_BNet_CollectDistribute);
+  tcase_set_timeout(InfCore, 0);
+  suite_add_tcase (s, InfCore);
+ 
+  return s;
+}
+
+int main (void){
+  int number_failed;
+  Suite *s = jt_suite();
+  SRunner *sr = srunner_create (s);
+  srunner_run_all (sr, CK_VERBOSE);
+  number_failed = srunner_ntests_failed (sr);
+  srunner_free (sr);
+  return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+}

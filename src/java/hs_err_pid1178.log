@@ -1,0 +1,250 @@
+#
+# An unexpected error has been detected by Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x0071bc13, pid=1178, tid=3086240656
+#
+# Java VM: Java HotSpot(TM) Server VM (1.6.0_01-b06 mixed mode)
+# Problematic frame:
+# C  [libc.so.6+0x6dc13]  strcat+0x53
+#
+# If you would like to submit a bug report, please visit:
+#   http://java.sun.com/webapps/bugreport/crash.jsp
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x099ef000):  JavaThread "main" [_thread_in_native, id=1179]
+
+siginfo:si_signo=11, si_errno=0, si_code=1, si_addr=0x30303030
+
+Registers:
+EAX=0x30303030, EBX=0x80e179b0, ECX=0xb7f43ee8, EDX=0x30303030
+ESP=0xb7f43eb8, EBP=0xb7f43f18, ESI=0x000000ac, EDI=0x80d31b91
+EIP=0x0071bc13, CR2=0x30303030, EFLAGS=0x00010246
+
+Top of Stack: (sp=0xb7f43eb8)
+0xb7f43eb8:   80d31b91 80e15ee1 30303030 b7f43ee8
+0xb7f43ec8:   a03d5bec 46f33dec 007fdff4 007fe4c0
+0xb7f43ed8:   00000024 80d31b88 00712aa3 007fe4c0
+0xb7f43ee8:   34343236 39303533 30303132 33373337
+0xb7f43ef8:   39303536 33363832 39353337 33313631
+0xb7f43f08:   302e3434 30303030 80002030 00000064
+0xb7f43f18:   b7f43f58 80e15fcd 80d974e8 00000050
+0xb7f43f28:   00000064 000000ac 00000064 802579a0 
+
+Instructions: (pc=0x0071bc13)
+0x0071bc03:   82 00 00 00 42 eb 09 8d b6 00 00 00 00 83 c2 10
+0x0071bc13:   8b 02 bf ff fe fe fe 01 c7 73 59 31 c7 81 cf ff 
+
+Stack: [0xb7ef4000,0xb7f45000),  sp=0xb7f43eb8,  free space=319k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [libc.so.6+0x6dc13]  strcat+0x53
+C  [libjunctionbox.so.1.0.1+0xcfcd]  Print_BNet+0xd3
+C  [libjunctionbox.so.1.0.1+0x5b1a]  Java_edu_umb_junctionbox_junctionboxJNI_Print_1BNet+0x38
+j  edu.umb.junctionbox.junctionboxJNI.Print_BNet(J)V+0
+j  edu.umb.junctionbox.junctionbox.Print_BNet(Ledu/umb/junctionbox/SWIGTYPE_p_BNet;)V+4
+j  edu.umb.junctionbox.XBIFParser.main([Ljava/lang/String;)V+1580
+v  ~StubRoutines::call_stub
+V  [libjvm.so+0x2b55ed]
+V  [libjvm.so+0x43dd98]
+V  [libjvm.so+0x2b5480]
+V  [libjvm.so+0x2de8a6]
+V  [libjvm.so+0x2cff4b]
+C  [java+0x1b98]  JavaMain+0x2c8
+C  [libpthread.so.0+0x544b]
+
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+j  edu.umb.junctionbox.junctionboxJNI.Print_BNet(J)V+0
+j  edu.umb.junctionbox.junctionbox.Print_BNet(Ledu/umb/junctionbox/SWIGTYPE_p_BNet;)V+4
+j  edu.umb.junctionbox.XBIFParser.main([Ljava/lang/String;)V+1580
+v  ~StubRoutines::call_stub
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x09b32000 JavaThread "Low Memory Detector" daemon [_thread_blocked, id=1194]
+  0x09b30000 JavaThread "CompilerThread1" daemon [_thread_blocked, id=1193]
+  0x09b2ec00 JavaThread "CompilerThread0" daemon [_thread_blocked, id=1192]
+  0x09b2dc00 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=1191]
+  0x09b1dc00 JavaThread "Finalizer" daemon [_thread_blocked, id=1190]
+  0x09b1a000 JavaThread "Reference Handler" daemon [_thread_blocked, id=1189]
+=>0x099ef000 JavaThread "main" [_thread_in_native, id=1179]
+
+Other Threads:
+  0x09b17400 VMThread [id=1188]
+  0x09b33800 WatcherThread [id=1195]
+
+VM state:not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+Heap
+ PSYoungGen      total 4736K, used 551K [0xaf970000, 0xb02b0000, 0xb4de0000)
+  eden space 4096K, 3% used [0xaf970000,0xaf997d20,0xafd70000)
+  from space 640K, 61% used [0xafd70000,0xafdd2050,0xafe10000)
+  to   space 640K, 0% used [0xb0210000,0xb0210000,0xb02b0000)
+ PSOldGen        total 43200K, used 0K [0x855e0000, 0x88010000, 0xaf970000)
+  object space 43200K, 0% used [0x855e0000,0x855e0000,0x88010000)
+ PSPermGen       total 16384K, used 2845K [0x815e0000, 0x825e0000, 0x855e0000)
+  object space 16384K, 17% used [0x815e0000,0x818a75f8,0x825e0000)
+
+Dynamic libraries:
+005f1000-00606000 r-xp 00000000 fd:00 14114504   /lib/libnsl-2.6.so
+00606000-00607000 r-xp 00014000 fd:00 14114504   /lib/libnsl-2.6.so
+00607000-00608000 rwxp 00015000 fd:00 14114504   /lib/libnsl-2.6.so
+00608000-0060a000 rwxp 00608000 00:00 0 
+0068f000-006aa000 r-xp 00000000 fd:00 14109255   /lib/ld-2.6.so
+006aa000-006ab000 r-xp 0001a000 fd:00 14109255   /lib/ld-2.6.so
+006ab000-006ac000 rwxp 0001b000 fd:00 14109255   /lib/ld-2.6.so
+006ae000-007fc000 r-xp 00000000 fd:00 14109257   /lib/libc-2.6.so
+007fc000-007fe000 r-xp 0014e000 fd:00 14109257   /lib/libc-2.6.so
+007fe000-007ff000 rwxp 00150000 fd:00 14109257   /lib/libc-2.6.so
+007ff000-00802000 rwxp 007ff000 00:00 0 
+00804000-0082b000 r-xp 00000000 fd:00 14109399   /lib/libm-2.6.so
+0082b000-0082c000 r-xp 00026000 fd:00 14109399   /lib/libm-2.6.so
+0082c000-0082d000 rwxp 00027000 fd:00 14109399   /lib/libm-2.6.so
+0082f000-00832000 r-xp 00000000 fd:00 14109384   /lib/libdl-2.6.so
+00832000-00833000 r-xp 00002000 fd:00 14109384   /lib/libdl-2.6.so
+00833000-00834000 rwxp 00003000 fd:00 14109384   /lib/libdl-2.6.so
+0084b000-0085f000 r-xp 00000000 fd:00 14109424   /lib/libpthread-2.6.so
+0085f000-00860000 r-xp 00013000 fd:00 14109424   /lib/libpthread-2.6.so
+00860000-00861000 rwxp 00014000 fd:00 14109424   /lib/libpthread-2.6.so
+00861000-00863000 rwxp 00861000 00:00 0 
+00d79000-00d80000 r-xp 00000000 fd:00 14109432   /lib/librt-2.6.so
+00d80000-00d81000 r-xp 00006000 fd:00 14109432   /lib/librt-2.6.so
+00d81000-00d82000 rwxp 00007000 fd:00 14109432   /lib/librt-2.6.so
+06000000-0657e000 r-xp 00000000 fd:00 7594809    /usr/java/jdk1.6.0_01/jre/lib/i386/server/libjvm.so
+0657e000-065b5000 rwxp 0057e000 fd:00 7594809    /usr/java/jdk1.6.0_01/jre/lib/i386/server/libjvm.so
+065b5000-069d5000 rwxp 065b5000 00:00 0 
+08048000-08052000 r-xp 00000000 fd:00 6355565    /usr/java/jdk1.6.0_01/bin/java
+08052000-08053000 rwxp 00009000 fd:00 6355565    /usr/java/jdk1.6.0_01/bin/java
+099ea000-09d52000 rwxp 099ea000 00:00 0 
+80200000-80258000 rwxp 80200000 00:00 0 
+80258000-80300000 --xp 80258000 00:00 0 
+80400000-804a6000 rwxp 80400000 00:00 0 
+804a6000-80500000 --xp 804a6000 00:00 0 
+8059b000-805b1000 r-xs 0010e000 fd:00 3863765    /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/src/java/lib/xerces-j2.jar
+805b1000-805b2000 --xp 805b1000 00:00 0 
+805b2000-80632000 rwxp 805b2000 00:00 0 
+80632000-80635000 --xp 80632000 00:00 0 
+80635000-80683000 rwxp 80635000 00:00 0 
+80683000-80686000 --xp 80683000 00:00 0 
+80686000-80704000 rwxp 80686000 00:00 0 
+80704000-80707000 --xp 80704000 00:00 0 
+80707000-80785000 rwxp 80707000 00:00 0 
+80785000-80985000 r-xp 00000000 fd:00 5896017    /usr/lib/locale/locale-archive
+80985000-80b00000 r-xs 02c75000 fd:00 7534799    /usr/java/jdk1.6.0_01/jre/lib/rt.jar
+80b00000-80bff000 rwxp 80b00000 00:00 0 
+80bff000-80c00000 --xp 80bff000 00:00 0 
+80c0d000-80c10000 --xp 80c0d000 00:00 0 
+80c10000-80c5e000 rwxp 80c10000 00:00 0 
+80c5e000-80c61000 --xp 80c5e000 00:00 0 
+80c61000-80caf000 rwxp 80c61000 00:00 0 
+80caf000-80cb2000 --xp 80caf000 00:00 0 
+80cb2000-80e00000 rwxp 80cb2000 00:00 0 
+80e09000-80e17000 r-xp 00000000 fd:00 13357764   /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/src/java/libjunctionbox.so.1.0.1
+80e17000-80e18000 rwxp 0000d000 fd:00 13357764   /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/src/java/libjunctionbox.so.1.0.1
+80e18000-80e19000 --xp 80e18000 00:00 0 
+80e19000-80ec9000 rwxp 80e19000 00:00 0 
+80ec9000-80eca000 --xp 80ec9000 00:00 0 
+80eca000-80f4a000 rwxp 80eca000 00:00 0 
+80f4a000-80f4b000 --xp 80f4a000 00:00 0 
+80f4b000-80fcb000 rwxp 80f4b000 00:00 0 
+80fcb000-80fcc000 --xp 80fcb000 00:00 0 
+80fcc000-8104c000 rwxp 80fcc000 00:00 0 
+8104c000-8104d000 --xp 8104c000 00:00 0 
+8104d000-810cd000 rwxp 8104d000 00:00 0 
+810cd000-810ce000 --xp 810cd000 00:00 0 
+810ce000-8114e000 rwxp 810ce000 00:00 0 
+8114e000-8114f000 --xp 8114e000 00:00 0 
+8114f000-811cf000 rwxp 8114f000 00:00 0 
+811cf000-811d0000 --xp 811cf000 00:00 0 
+811d0000-81250000 rwxp 811d0000 00:00 0 
+81250000-81251000 --xp 81250000 00:00 0 
+81251000-812d9000 rwxp 81251000 00:00 0 
+812d9000-812f1000 rwxp 812d9000 00:00 0 
+812f1000-81307000 rwxp 812f1000 00:00 0 
+81307000-81443000 rwxp 81307000 00:00 0 
+81443000-8144b000 rwxp 81443000 00:00 0 
+8144b000-81463000 rwxp 8144b000 00:00 0 
+81463000-81479000 rwxp 81463000 00:00 0 
+81479000-815b4000 rwxp 81479000 00:00 0 
+815b4000-815ba000 rwxp 815b4000 00:00 0 
+815ba000-815df000 rwxp 815ba000 00:00 0 
+815df000-825e0000 rwxp 815df000 00:00 0 
+825e0000-855e0000 rwxp 825e0000 00:00 0 
+855e0000-88010000 rwxp 855e0000 00:00 0 
+88010000-af970000 rwxp 88010000 00:00 0 
+af970000-b02b0000 rwxp af970000 00:00 0 
+b02b0000-b4de0000 rwxp b02b0000 00:00 0 
+b4de8000-b4dea000 r-xs 00005000 fd:00 13357756   /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/src/java/XBIFParser.jar
+b4dea000-b4df3000 rwxp b4dea000 00:00 0 
+b4df3000-b4eaa000 rwxp b4df3000 00:00 0 
+b4eaa000-b50ea000 rwxp b4eaa000 00:00 0 
+b50ea000-b7eaa000 rwxp b50ea000 00:00 0 
+b7eaa000-b7eb9000 r-xp 00000000 fd:00 7594801    /usr/java/jdk1.6.0_01/jre/lib/i386/libzip.so
+b7eb9000-b7ebb000 rwxp 0000e000 fd:00 7594801    /usr/java/jdk1.6.0_01/jre/lib/i386/libzip.so
+b7ebb000-b7ede000 r-xp 00000000 fd:00 7594778    /usr/java/jdk1.6.0_01/jre/lib/i386/libjava.so
+b7ede000-b7ee0000 rwxp 00023000 fd:00 7594778    /usr/java/jdk1.6.0_01/jre/lib/i386/libjava.so
+b7ee0000-b7eeb000 r-xp 00000000 fd:00 7594800    /usr/java/jdk1.6.0_01/jre/lib/i386/libverify.so
+b7eeb000-b7eec000 rwxp 0000b000 fd:00 7594800    /usr/java/jdk1.6.0_01/jre/lib/i386/libverify.so
+b7eec000-b7ef4000 rwxs 00000000 fd:00 14600867   /tmp/hsperfdata_vegas/1178
+b7ef4000-b7ef7000 --xp b7ef4000 00:00 0 
+b7ef7000-b7f47000 rwxp b7ef7000 00:00 0 
+b7f47000-b7f4e000 r-xp 00000000 fd:00 7594761    /usr/java/jdk1.6.0_01/jre/lib/i386/jli/libjli.so
+b7f4e000-b7f50000 rwxp 00006000 fd:00 7594761    /usr/java/jdk1.6.0_01/jre/lib/i386/jli/libjli.so
+b7f50000-b7f51000 rwxp b7f50000 00:00 0 
+b7f51000-b7f53000 r-xs 00003000 fd:00 13357755   /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/src/java/junctionbox.jar
+b7f53000-b7f5d000 r-xp 00000000 fd:00 14109256   /lib/libnss_files-2.6.so
+b7f5d000-b7f5e000 r-xp 00009000 fd:00 14109256   /lib/libnss_files-2.6.so
+b7f5e000-b7f5f000 rwxp 0000a000 fd:00 14109256   /lib/libnss_files-2.6.so
+b7f5f000-b7f65000 r-xp 00000000 fd:00 7594805    /usr/java/jdk1.6.0_01/jre/lib/i386/native_threads/libhpi.so
+b7f65000-b7f66000 rwxp 00006000 fd:00 7594805    /usr/java/jdk1.6.0_01/jre/lib/i386/native_threads/libhpi.so
+b7f66000-b7f67000 rwxp b7f66000 00:00 0 
+b7f67000-b7f68000 r-xp b7f67000 00:00 0 
+b7f68000-b7f69000 rwxp b7f68000 00:00 0 
+b7f69000-b7f6a000 r-xp b7f69000 00:00 0          [vdso]
+bf9ec000-bfa01000 rwxp bffea000 00:00 0          [stack]
+
+VM Arguments:
+jvm_args: -Djava.library.path=.
+java_command: edu.umb.junctionbox.XBIFParser -m ../../res/UAI/xbif/pe/BN_0.xbif
+Launcher Type: SUN_STANDARD
+
+Environment Variables:
+JAVA_HOME=/usr/java/jdk1.6.0_01
+PATH=/usr/lib/qt-3.3/bin:/usr/kerberos/bin:/usr/lib/ccache:/usr/java/jdk1.6.0_01/bin:/usr/local/bin:/usr/bin:/bin:/home/vegas/bin:/home/vegas/lib/android_sdk_linux_m3-rc22a/tools:/home/vegas/lib/scripts
+LD_LIBRARY_PATH=/usr/java/jdk1.6.0_01/jre/lib/i386/server:/usr/java/jdk1.6.0_01/jre/lib/i386:/usr/java/jdk1.6.0_01/jre/../lib/i386
+SHELL=/bin/zsh
+DISPLAY=:0.0
+
+Signal Handlers:
+SIGSEGV: [libjvm.so+0x51d3a0], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGBUS: [libjvm.so+0x51d3a0], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGFPE: [libjvm.so+0x43d430], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGPIPE: [libjvm.so+0x43d430], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGILL: [libjvm.so+0x43d430], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGUSR1: SIG_DFL, sa_mask[0]=0x00000000, sa_flags=0x00000000
+SIGUSR2: [libjvm.so+0x43f440], sa_mask[0]=0x00000000, sa_flags=0x10000004
+SIGHUP: [libjvm.so+0x43ee60], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGINT: [libjvm.so+0x43ee60], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGQUIT: [libjvm.so+0x43ee60], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGTERM: [libjvm.so+0x43ee60], sa_mask[0]=0x7ffbfeff, sa_flags=0x10000004
+SIGUSR2: [libjvm.so+0x43f440], sa_mask[0]=0x00000000, sa_flags=0x10000004
+
+
+---------------  S Y S T E M  ---------------
+
+OS:Fedora release 7 (Moonshine)
+
+uname:Linux 2.6.23.15-80.fc7 #1 SMP Sun Feb 10 17:29:10 EST 2008 i686
+libc:glibc 2.6 NPTL 2.6 
+rlimit: STACK 10240k, CORE 0k, NPROC 65536, NOFILE 1024, AS infinity
+load average:0.01 0.06 0.07
+
+CPU:total 8 family 15, cmov, cx8, fxsr, mmx, sse, sse2, ht
+
+Memory: 4k page, physical 3105784k(237748k free), swap 11350000k(11349928k free)
+
+vm_info: Java HotSpot(TM) Server VM (1.6.0_01-b06) for linux-x86, built on Mar 14 2007 00:47:53 by "java_re" with gcc 3.2.1-7a (J2SE release)
+

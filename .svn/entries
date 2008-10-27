@@ -1,0 +1,148 @@
+8
+
+dir
+21
+https://localhost/repos/JunctionBox
+https://localhost/repos/JunctionBox
+
+
+
+2008-04-22T20:43:30.156095Z
+21
+vegas
+has-props
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+2b07ee84-9a10-4a55-8377-53b5ea0c664d
+
+tuidebug.sh
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+a8ad371e590ad7d6779c8db89187814d
+2008-03-04T21:57:48.206637Z
+17
+vegas
+has-props
+
+include
+dir
+
+Planning.txt
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+956bc3244c5917315b34956a327c17b4
+2008-04-21T17:47:59.051072Z
+19
+vegas
+
+src
+dir
+
+res
+dir
+
+current_id
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+d41d8cd98f00b204e9800998ecf8427e
+2008-03-04T21:57:48.206637Z
+17
+vegas
+
+debug.sh
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+56c2cc41def6cfba94a9ef3d893779eb
+2008-01-25T13:32:25.969706Z
+3
+vegas
+has-props
+
+makeout
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+3db42dab904c8ae40eb91cb66b3685b6
+2008-03-04T21:57:48.206637Z
+17
+vegas
+
+doc
+dir
+
+lib
+dir
+
+scrap
+dir
+
+bin
+dir
+
+data
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+57b602ce7e8bc8bb3e63bc5150651b71
+2008-03-04T21:57:48.206637Z
+17
+vegas
+
+run.sh
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+a18878bb5309fe510e38ea160c10255d
+2008-01-24T13:18:13.709410Z
+2
+vegas
+has-props
+
+Makefile
+file
+
+
+
+
+2008-04-30T19:29:47.000000Z
+6f70bbb32059af963bbdf324ac193edd
+2008-04-22T20:43:30.156095Z
+21
+vegas
+

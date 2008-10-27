@@ -1,0 +1,8 @@
+CFLAGS:= ${CHECK_INCLUDE} ${GRAPHVIZ_HEADERS} ${CFLAGS}
+LDFLAGS:=${JB_UTIL_LDFLAGS} ${GRAPHVIZ_LIBRARIES}
+FILES=Test_JB_JunctionTree.c
+STATIC_LIBS = ${CHECK_LIB_PATH} ${JB_JT_LIB_PATH} ${JB_GRAPH_LIB_PATH} ${JB_UTIL_LIB_PATH}
+
+all: Test_JB_JunctionTree
+Test_JB_JunctionTree: Test_JB_JunctionTree.c
+	gcc  ${CFLAGS} ${LDFLAGS} Test_JB_JunctionTree.c ${STATIC_LIBS} -o ${TESTBIN}/Test_JB_JunctionTree

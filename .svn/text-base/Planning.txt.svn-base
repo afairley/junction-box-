@@ -1,0 +1,173 @@
+3/11/2008 10:00AM
+I)Gather all notes on remaining tasks and review.
+II)Modify JB_JunctionTree to take in a Variable Ordering to associate
+with Cliques and Sepsets.
+     1)It looks like the only place that the ordering of VertexOrdering is
+     important is in GatherElimSets, where
+     VertexOrdering_GetVertexRank is called to implement "marking" of
+     eliminated vertices.  I'll change things so that:
+     		a)ElimSet's are backed by a VariableSet rather than a
+		VertexSet
+		b)GatherElimSets recieves a VariableOrdering as
+		well as a VertexOrdering, and passes this on.
+		     i)Put Variable/VariableOrdering in JB_Util.
+		     	   TODO: Refactor, putting this stuff in a more
+			   flexible header structure.
+		     ii)Add a Graph_DefaultVariableOrdering method
+		     which sorts the Vertices of a Graph
+		     lexicographically, and builds corresponding variables
+		     
+3/11/2008 4:55PM
+III)Finish JB_Pot
+	   1)Review unimplemented functions from header file, compile list.
+	   2)Test Index computations
+3/13/2008 11:00AM
+	  1)Build a function
+	  int** IndexCross(VariableSet *first,
+			   int * firstIndices,
+	   		   VariableSet *second,
+			   int **secondIndicesSet, 
+			   int secondSampleCard)
+	  which returns an array of all indices into a potential over
+	  first union second, with the indices for the variables in
+	  first fixed at firstIndices, and the indices for the
+	  variables over second ranging over all the values in
+	  secondIndicesSet. It might be more efficient to figure out a
+	  way to 'pullback' this arithmetic onto the regular integers,
+	  but C is not a nice medium for expressing such concepts, at
+	  least at the first go. Strangely enough, browsing reddit and
+	  wikipedia just now, I found out that there are efficient
+	  algorithms for working with 'mixed radix numbers', which
+	  these indices could be considered. There's some
+	  incomprehensible stuff in Jorg Arndt's free 
+"Algorithms for programmers ideas and source code"
+	  and supposedly Knuth vol. II. For now, I will do things the
+	  naive way.
+	  2)Use IndexCross to implement Pot_ComputeMargInd and 
+	  	Pot_ComputeIndexMap.
+	  3)Implement potential multiplication and sum marginals
+	  4)Implement UpdateRatio
+	  5)Test potential operations
+	  6)Implement MessagePass
+	  7)Implement CollectEvidence
+	  7)Implement DistributeEvidence
+3/24/2008
+	Encountered some bugs in potential multiplication due to bad
+	malloc'ing. Tracked  them down and fixed them. Encountered
+	another bug where graph neighbors were being enumerated
+	incorrectly because the iterator depended on edges being
+	stored locally in each vertex, wheras the graph was storing
+	undirected edges in a less redundant fashion.  Fixed this by
+	storing edges in a maximally redundant way.  Then ran into
+	another problem where VertexOrderings didn't carry over across
+	graphs. Fixed this by adding a LookupVertexRankByLabel method
+	to VertexOrdering.  This requires a bunch of string
+	comparisons and is inefficient and should be replaced when
+	there is time.  Overall, the superficial distinction between
+	Variables and Vertices and Vertices in derived graphs needs to
+	be handled in a more elegant fashion.
+3/25/2008
+	BNet_InitializePotentials is not working as it should be. In
+	our test case we start with a BNet that looks like this:
+                      D
+                    /   \
+                   A     B
+                    \   /
+                      C
+        with CPTs 
+  P(D)
+  /* D=0*/ = 1.0/4.0;
+  /* D=1*/ = 3.0/4.0;
+  P(B|D)
+  /* D=0, B=0,*/ = 1.0/4.0;	
+  /* D=0, B=1,*/ = 3.0/4.0;	
+  /* D=1, B=0,*/ = 2.0/4.0;
+  /* D=1, B=1,*/ = 2.0/4.0;
+  P(A|D)
+  /* D=0, A=0,*/ = 1.0/2.0;
+  /* D=0, A=1,*/ = 1.0/2.0;
+  /* D=1, A=0,*/ = 1.0/4.0;
+  /* D=1, A=1,*/ = 3.0/4.0;
+  P(C|A,B)
+  /* A=0, B=0, C=0 */ = 1.0/2.0;
+  /* A=0, B=0, C=1 */ = 1.0/2.0;
+  /* A=0, B=1, C=0 */ = 3.0/4.0;
+  /* A=0, B=1, C=1 */ = 1.0/4.0;
+  /* A=1, B=0, C=0 */ = 1.0/2.0;
+  /* A=1, B=0, C=1 */ = 1.0/2.0;
+  /* A=1, B=1, C=0 */ = 3.0/4.0;
+  /* A=1, B=1, C=1 */ = 1.0/4.0;
+
+Initializing our potential properly ought to lead us to 
+phi_{ABC} = P(C|A,B) exactly
+phi_{DAB}=P(D) * P(B|D) * P(A|D)
+
+=  /* D=0, A=0, B=0 */ = 0.03125
+   /* D=0, A=0, B=1 */ = 0.09375
+   /* D=0, A=1, B=0 */ = 0.03125
+   /* D=0, A=1, B=1 */ = 0.09375
+   /* D=1, A=0, B=0 */ = 0.09375
+   /* D=1, A=0, B=1 */ = 0.28125
+   /* D=1, A=1, B=0 */ = 0.09375
+   /* D=1, A=1, B=1 */ = 0.28125
+(computations carried out using the lovely genius arbitrary precision
+   calculator. see doc/3_25_08_BNet_InitializePotentials.gel)
+
+Running the test currently outputs
+D A B  0.031250 0.093750 0.031250 0.093750 0.093750 0.281250 0.093750 0.281250 
+A B C  0.003906 0.026367 0.003906 0.026367 1.000000 1.000000 1.000000 1.000000 
+
+which is correct for DAB,(the harder case!) but wrong for ABC, which
+should just be a trivial copy(//TODO add optimization here?*/
+The symmetry in ABC's incorrectness suggests that there's some kind of
+problem with the VariableSets or something which is causing things to
+be multiplied with the incorrect indices. I will now investigate in
+the debugger.
+
+The mulind generated at line 100 of JB_Inference for initializing
+Phi_{ABC} from P(C|A,B) is
+"
+0 : 0
+1 : 0
+2 : 1
+3 : 1
+4 : 2
+5 : 2
+6 : 3
+7 : 3
+
+
+0 : 0
+1 : 0
+2 : 1
+3 : 1
+4 : 2
+5 : 2
+6 : 3
+7 : 3
+
+I added a special case check to ComputeMargInd for when target is the
+same set as this. Now my MulInd looks like
+
+0 : 0
+1 : 1
+2 : 2
+3 : 3
+4 : 4
+5 : 5
+6 : 6
+7 : 7
+
+which is as it should be.  However, the answer that pops out at the
+end of the test is wrong!
+
+Adding the appropriate break to the end of the for loop multiplying
+cpts into cliques fixed this
+
+3/26
+I need to make a VertexSet to make marking vertices efficient for 
+Collect/Distribute evidence. 
+4/3
+Finally, interviewing is over! Back to productive labor!!!
+
+Today I am going to implement/Test CollectEvidence and DistributeEvidence

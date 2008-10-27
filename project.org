@@ -1,0 +1,69 @@
+*Junction Box: A free as in freedom implementation of Junction Tree Inference for Bayes Nets.
+** Milestone: Release 1
+***Current Functionality:
+	   Perform Junction Tree inference on a Bayes Net with no evidence, specified in either C or Java Code
+*** Release Targets:
+**** Add simple evidence potentials [13/13]
+ - [X] Add observations to JB_Model.h
+ - [X] Add observations to JB_Model.c
+  - [X] Observation_Create : Must initialize a potential based on
+    variable pointer and value
+   -  Because of the tangledness of VariableSets, Orderings
+      and Potentials, I am making Observation_Create take a
+      VariableSet. It should be a singleton VariableSet. This
+      necessitates a walk through the Variable Ordering[O(v) time],
+      and will be done away with REFACTOR[0].
+  - [X] Observation_Destroy 
+ - [X] Store Observations  in BNet type
+  - [X] Because of awkwardness with SWIG and ptrs to ptrs, I'm using Lists
+    to initialize BNet Structures. [BNet_Create_List] .
+  - [X] I'll initially create a BNet_Create_List2 which will also take
+    a list of observations.
+   - [X] Modify  bnet struct
+   - [X] BNet_Create_List2
+ - [X] Multiply the observations into potentials when initializing the
+  JT Potentials.
+ - [X] Test Observations in C
+ - [X] Add Observations to SWIG
+ - [X] Test Observations in Java
+**** Add XML Parsing in Java Component, so as to attempt UAI benchmarks [7/7]
+ - [X] Identify the easily passable benchmarks. Make a list in a
+   linked file
+   -[[~/Documents/Academic/Masters_Thesis/code/JunctionBox_noGraphviz/res/UAI/results/pe/sorted_pe_topTen.txt][Top Ten Easiest]] 
+ - [X] Set up XBIFParser based on Xerces-J2 SAX example
+  - [X]Initial steps: Statistics about xbif file:
+   - Number of Variables
+   - Maximum number of values per variable
+   - Maximum number of parents of any variable
+   - Number of observations
+ - [X] Build a JAR out of SWIG code
+ - [X] See if it's possible to tell swig to use packages instead of
+   being so sloppy
+  - It is, but it breaks the Void pointer typemap stuff. 
+ - [X] Include JAR in Parser
+ - [X] Use JAR to construct Bayes Nets from UAI
+****Testing
+- [X] Add a function which takes in a Bayes Net, and a list of
+  variables and returns a list of all clique potentials containing all
+  members of the list
+- [ ] Expose marginalization of potentials via SWIG
+- [ ] Verify that we are getting consistent marginals over each
+  variable in all the places the variable occurs
+- [ ] Possibly contract the charge over the junction tree on some
+  assignment, and verify that it is unchanged after each message pass
+**** Merge SVN, or otherwise resolve somehow
+****Memory Management
+ - Key issue for memory management is potentials and their huge arrays
+   of doubles.
+ - Labels are sometimes shared. This saves memory, but makes
+   deallocation problematic. This must be addresessed systematically
+****General Refactoring
+ - REFACTOR[0]The business about VariableSets and potentials and such in the
+   creation of Conditional Probability Tables and observations should
+   be moved into a factory method in order to make client code
+   cleaner.
+   This factory method could take a Variable List, and an array of
+   doubles
+   You'd probably want a factory object so as not to recreate VariableOrderings
+**** rpm? deb?
+

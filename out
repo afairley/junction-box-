@@ -1,0 +1,70 @@
+JBHOME is  /home/afairley/Documents/Projects/JunctionBox_noGraphviz
+make -C src all
+make[1]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src'
+make -C components all
+make[2]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components'
+make -C JB_Util all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Util'
+gcc -c -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include JB_Error.c JB_Mem.c JB_String.c BitVector.c  LinkedList.c Map.c IntMap.c VoidpMap.c BitVectorMap.c DSetForest.c Variable.c VariableOrdering.c;
+LinkedList.c: In function ‘List_ToString’:
+LinkedList.c:88: warning: cast from pointer to integer of different size
+VariableOrdering.c: In function ‘VariableOrdering_ToString’:
+VariableOrdering.c:34: warning: cast from pointer to integer of different size
+ar rcs /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Util.a JB_Error.o JB_Mem.o JB_String.o BitVector.o  LinkedList.o Map.o IntMap.o VoidpMap.o BitVectorMap.o DSetForest.o Variable.o VariableOrdering.o
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Util'
+make -C JB_Graph all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Graph'
+gcc -c  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include JB_Graph.c -o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Graph.o
+JB_Graph.c: In function ‘Edge_Create’:
+JB_Graph.c:136: warning: cast from pointer to integer of different size
+JB_Graph.c: In function ‘srcsink’:
+JB_Graph.c:627: warning: cast from pointer to integer of different size
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Graph'
+make -C JB_Pot all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Pot'
+gcc -c  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include   JB_Pot.c -o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Pot.o	
+JB_Pot.c: In function ‘VariableSet_GetLabel’:
+JB_Pot.c:34: warning: cast from pointer to integer of different size
+JB_Pot.c: In function ‘VariableSet_GetFstVbl’:
+JB_Pot.c:89: warning: return makes pointer from integer without a cast
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Pot'
+make -C JB_Model all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Model'
+gcc -c  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include JB_Model.c -o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Model.o	
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Model'
+make -C JB_JunctionTree all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_JunctionTree'
+gcc -c  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include JB_JunctionTree.c -o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_JunctionTree.o
+JB_JunctionTree.c: In function ‘VertexOrdering_ToString’:
+JB_JunctionTree.c:52: warning: cast from pointer to integer of different size
+JB_JunctionTree.c: In function ‘ElimSet_GetLabel’:
+JB_JunctionTree.c:98: warning: cast from pointer to integer of different size
+JB_JunctionTree.c: In function ‘ElimSetCollection_ToString’:
+JB_JunctionTree.c:268: warning: cast from pointer to integer of different size
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_JunctionTree'
+make -C JB_Inference all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Inference'
+gcc -c  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include   VertexSet.c JB_Inference.c
+VertexSet.c: In function ‘VertexSet_GetLabel’:
+VertexSet.c:25: warning: cast from pointer to integer of different size
+ar rcs /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Inference.a VertexSet.o JB_Inference.o
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Inference'
+make[2]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components'
+make -C test all
+make[2]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/test'
+make -C JB_Inference all
+make[3]: Entering directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/test/JB_Inference'
+gcc  -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/lib/bin/check/include  -Wall  -ggdb3 -fpic   -I/home/afairley/Documents/Projects/JunctionBox_noGraphviz/include -lm   Test_JB_Inference.c /home/afairley/Documents/Projects/JunctionBox_noGraphviz/lib/bin/check/lib/libcheck.a  /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Inference.a /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_JunctionTree.o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Model.o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Pot.o  /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Graph.o  /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/JB_Util.a \
+	    -o /home/afairley/Documents/Projects/JunctionBox_noGraphviz/bin/test/Test_JB_Inference
+Test_JB_Inference.c: In function ‘Test_BNet_BuildElimTree’:
+Test_JB_Inference.c:47: warning: unused variable ‘outFileName’
+Test_JB_Inference.c: In function ‘Test_BNet_CollectDistribute_WithDObs0’:
+Test_JB_Inference.c:108: warning: implicit declaration of function ‘BuildSimpleBNetDObs’
+Test_JB_Inference.c:108: warning: initialization makes pointer from integer without a cast
+Test_JB_Inference.c: At top level:
+Test_JB_Inference.c:34: warning: ‘Test_BNet_StateSpaceWeightedElimOrdering’ defined but not used
+Test_JB_Inference.c:43: warning: ‘Test_BNet_BuildElimTree’ defined but not used
+Test_JB_Inference.c:53: warning: ‘Test_BNet_InitializePotentials’ defined but not used
+make[3]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/test/JB_Inference'
+make[2]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/test'
+make[1]: Leaving directory `/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src'

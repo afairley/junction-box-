@@ -1,0 +1,315 @@
+package edu.umb.junctionbox;
+public class Main{
+    public static SWIGTYPE_p_BNet BuildSimpleBNet(){
+        SWIGTYPE_p_Variable A,B,C,D;
+        SWIGTYPE_p_List l;
+        A = junctionbox.Variable_CreateDiscrete("A",2,null);
+        B = junctionbox.Variable_CreateDiscrete("B",2,null);
+        C = junctionbox.Variable_CreateDiscrete("C",2,null);
+        D = junctionbox.Variable_CreateDiscrete("D",2,null);
+        l = junctionbox.List_Create();
+        junctionbox.List_Append(l,D.getVoidPointer());
+        junctionbox.List_Append(l,A.getVoidPointer());
+        junctionbox.List_Append(l,B.getVoidPointer());
+        junctionbox.List_Append(l,C.getVoidPointer());
+        SWIGTYPE_p_VariableOrdering o = junctionbox.VariableOrdering_Create(l);
+        SWIGTYPE_p_VariableSet vs1,vs2,vs3,vs4;
+        vs1 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs1,A);
+        junctionbox.VariableSet_Add(vs1,B);
+        junctionbox.VariableSet_Add(vs1,C);
+        vs2 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs2,A);
+        junctionbox.VariableSet_Add(vs2,D);
+        vs3 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs3,B);
+        junctionbox.VariableSet_Add(vs3,D);
+        vs4 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs4,D);
+
+        SWIGTYPE_p_double vData1 = junctionbox.new_doubleArray(8);
+        junctionbox.doubleArray_setitem(vData1,0, 1.0/2.0);/* A=0, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,1, 1.0/2.0);/* A=0, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,2, 3.0/4.0);/* A=0, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,3, 1.0/4.0);/* A=0, B=1, C=1 */
+        junctionbox.doubleArray_setitem(vData1,4, 1.0/2.0);/* A=1, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,5, 1.0/2.0);/* A=1, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,6, 3.0/4.0);/* A=1, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,7, 1.0/4.0);/* A=1, B=1, C=1 */
+
+        SWIGTYPE_p_double vData2 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData2,0, 1.0/2.0);/* D=0, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,1, 1.0/2.0);/* D=0, A=1,*/
+        junctionbox.doubleArray_setitem(vData2,2, 1.0/4.0);/* D=1, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,3, 3.0/4.0);/* D=1, A=1,*/
+
+        SWIGTYPE_p_double vData3 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData3,0, 1.0/4.0);/* D=0, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,1, 3.0/4.0);/* D=0, B=1,*/
+        junctionbox.doubleArray_setitem(vData3,2, 2.0/4.0);/* D=1, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,3, 2.0/4.0);/* D=1, B=1,*/
+
+        SWIGTYPE_p_double vData4 = junctionbox.new_doubleArray(2);
+        junctionbox.doubleArray_setitem(vData4,0, 1.0/4.0);/* D=0*/
+        junctionbox.doubleArray_setitem(vData4,1, 3.0/4.0);/* D=1*/
+
+        SWIGTYPE_p_List parents1, parents2, noParents;
+        parents1 = junctionbox.List_Create();
+        junctionbox.List_Append(parents1,A.getVoidPointer());
+        junctionbox.List_Append(parents1,B.getVoidPointer());
+
+        parents2 = junctionbox.List_Create();
+        junctionbox.List_Append(parents2,D.getVoidPointer());
+
+        noParents = junctionbox.List_Create();
+
+        SWIGTYPE_p_Pot p1,p2,p3,p4;
+        p1 = junctionbox.Pot_CreateTabular("cptPot",vs1,vData1);
+        p2 = junctionbox.Pot_CreateTabular("cptPot",vs2,vData2);
+        p3 = junctionbox.Pot_CreateTabular("cptPot",vs3,vData3);
+        p4 = junctionbox.Pot_CreateTabular("cptPot",vs4,vData4);
+
+        SWIGTYPE_p_CPT cpt1,cpt2,cpt3,cpt4;
+        cpt1 = junctionbox.CPT_Create_ParentList(parents1,C,p1);
+        cpt2 = junctionbox.CPT_Create_ParentList(parents2,A,p2);
+        cpt3 = junctionbox.CPT_Create_ParentList(parents2,B,p3);
+        cpt4 = junctionbox.CPT_Create_ParentList(noParents,D,p4);
+
+        SWIGTYPE_p_List tables = junctionbox.List_Create();
+        junctionbox.List_Append(tables,cpt1.getVoidPointer());
+        junctionbox.List_Append(tables,cpt2.getVoidPointer());
+        junctionbox.List_Append(tables,cpt3.getVoidPointer());
+        junctionbox.List_Append(tables,cpt4.getVoidPointer());
+
+        SWIGTYPE_p_BNet bn = junctionbox.BNet_Create_List(o , tables);
+        return bn;
+    }
+
+        public static SWIGTYPE_p_BNet BuildSimpleBNetWithObs(){
+        SWIGTYPE_p_Variable A,B,C,D;
+        SWIGTYPE_p_List l;
+        A = junctionbox.Variable_CreateDiscrete("A",2,null);
+        B = junctionbox.Variable_CreateDiscrete("B",2,null);
+        C = junctionbox.Variable_CreateDiscrete("C",2,null);
+        D = junctionbox.Variable_CreateDiscrete("D",2,null);
+        l = junctionbox.List_Create();
+        junctionbox.List_Append(l,D.getVoidPointer());
+        junctionbox.List_Append(l,A.getVoidPointer());
+        junctionbox.List_Append(l,B.getVoidPointer());
+        junctionbox.List_Append(l,C.getVoidPointer());
+        SWIGTYPE_p_VariableOrdering o = junctionbox.VariableOrdering_Create(l);
+        SWIGTYPE_p_VariableSet vs1,vs2,vs3,vs4,vs5;
+        vs1 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs1,A);
+        junctionbox.VariableSet_Add(vs1,B);
+        junctionbox.VariableSet_Add(vs1,C);
+        vs2 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs2,A);
+        junctionbox.VariableSet_Add(vs2,D);
+        vs3 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs3,B);
+        junctionbox.VariableSet_Add(vs3,D);
+        vs4 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs4,D);
+
+        SWIGTYPE_p_double vData1 = junctionbox.new_doubleArray(8);
+        junctionbox.doubleArray_setitem(vData1,0, 1.0/2.0);/* A=0, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,1, 1.0/2.0);/* A=0, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,2, 3.0/4.0);/* A=0, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,3, 1.0/4.0);/* A=0, B=1, C=1 */
+        junctionbox.doubleArray_setitem(vData1,4, 1.0/2.0);/* A=1, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,5, 1.0/2.0);/* A=1, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,6, 3.0/4.0);/* A=1, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,7, 1.0/4.0);/* A=1, B=1, C=1 */
+
+        SWIGTYPE_p_double vData2 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData2,0, 1.0/2.0);/* D=0, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,1, 1.0/2.0);/* D=0, A=1,*/
+        junctionbox.doubleArray_setitem(vData2,2, 1.0/4.0);/* D=1, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,3, 3.0/4.0);/* D=1, A=1,*/
+
+        SWIGTYPE_p_double vData3 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData3,0, 1.0/4.0);/* D=0, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,1, 3.0/4.0);/* D=0, B=1,*/
+        junctionbox.doubleArray_setitem(vData3,2, 2.0/4.0);/* D=1, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,3, 2.0/4.0);/* D=1, B=1,*/
+
+        SWIGTYPE_p_double vData4 = junctionbox.new_doubleArray(2);
+        junctionbox.doubleArray_setitem(vData4,0, 1.0/4.0);/* D=0*/
+        junctionbox.doubleArray_setitem(vData4,1, 3.0/4.0);/* D=1*/
+
+        SWIGTYPE_p_List parents1, parents2, noParents;
+        parents1 = junctionbox.List_Create();
+        junctionbox.List_Append(parents1,A.getVoidPointer());
+        junctionbox.List_Append(parents1,B.getVoidPointer());
+
+        parents2 = junctionbox.List_Create();
+        junctionbox.List_Append(parents2,D.getVoidPointer());
+
+        noParents = junctionbox.List_Create();
+
+        SWIGTYPE_p_Pot p1,p2,p3,p4;
+        p1 = junctionbox.Pot_CreateTabular("cptPot",vs1,vData1);
+        p2 = junctionbox.Pot_CreateTabular("cptPot",vs2,vData2);
+        p3 = junctionbox.Pot_CreateTabular("cptPot",vs3,vData3);
+        p4 = junctionbox.Pot_CreateTabular("cptPot",vs4,vData4);
+
+        SWIGTYPE_p_CPT cpt1,cpt2,cpt3,cpt4;
+        cpt1 = junctionbox.CPT_Create_ParentList(parents1,C,p1);
+        cpt2 = junctionbox.CPT_Create_ParentList(parents2,A,p2);
+        cpt3 = junctionbox.CPT_Create_ParentList(parents2,B,p3);
+        cpt4 = junctionbox.CPT_Create_ParentList(noParents,D,p4);
+
+        SWIGTYPE_p_List tables = junctionbox.List_Create();
+        junctionbox.List_Append(tables,cpt1.getVoidPointer());
+        junctionbox.List_Append(tables,cpt2.getVoidPointer());
+        junctionbox.List_Append(tables,cpt3.getVoidPointer());
+        junctionbox.List_Append(tables,cpt4.getVoidPointer());
+
+        vs5 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs5,D);
+        SWIGTYPE_p_Observation obsDIs1 = junctionbox.Observation_Create(vs5,1);
+        SWIGTYPE_p_List obs = junctionbox.List_Create();
+        junctionbox.List_Append(obs,obsDIs1.getVoidPointer());
+
+        SWIGTYPE_p_BNet bn = junctionbox.BNet_Create_List2(o, tables, obs);
+        return bn;
+    }
+
+ public static SWIGTYPE_p_BNet BuildSimpleBNetWithObsLog(){
+        SWIGTYPE_p_Variable A,B,C,D;
+        SWIGTYPE_p_List l;
+        A = junctionbox.Variable_CreateDiscrete("A",2,null);
+        B = junctionbox.Variable_CreateDiscrete("B",2,null);
+        C = junctionbox.Variable_CreateDiscrete("C",2,null);
+        D = junctionbox.Variable_CreateDiscrete("D",2,null);
+        l = junctionbox.List_Create();
+        junctionbox.List_Append(l,D.getVoidPointer());
+        junctionbox.List_Append(l,A.getVoidPointer());
+        junctionbox.List_Append(l,B.getVoidPointer());
+        junctionbox.List_Append(l,C.getVoidPointer());
+        SWIGTYPE_p_VariableOrdering o = junctionbox.VariableOrdering_Create(l);
+        SWIGTYPE_p_VariableSet vs1,vs2,vs3,vs4,vs5;
+        vs1 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs1,A);
+        junctionbox.VariableSet_Add(vs1,B);
+        junctionbox.VariableSet_Add(vs1,C);
+        vs2 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs2,A);
+        junctionbox.VariableSet_Add(vs2,D);
+        vs3 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs3,B);
+        junctionbox.VariableSet_Add(vs3,D);
+        vs4 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs4,D);
+
+        SWIGTYPE_p_double vData1 = junctionbox.new_doubleArray(8);
+        junctionbox.doubleArray_setitem(vData1,0, Math.log(1.0/2.0));/* A=0, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,1, Math.log(1.0/2.0));/* A=0, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,2, Math.log(3.0/4.0));/* A=0, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,3, Math.log(1.0/4.0));/* A=0, B=1, C=1 */
+        junctionbox.doubleArray_setitem(vData1,4, Math.log(1.0/2.0));/* A=1, B=0, C=0 */
+        junctionbox.doubleArray_setitem(vData1,5, Math.log(1.0/2.0));/* A=1, B=0, C=1 */
+        junctionbox.doubleArray_setitem(vData1,6, Math.log(3.0/4.0));/* A=1, B=1, C=0 */
+        junctionbox.doubleArray_setitem(vData1,7, Math.log(1.0/4.0));/* A=1, B=1, C=1 */
+
+        SWIGTYPE_p_double vData2 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData2,0, Math.log(1.0/2.0));/* D=0, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,1, Math.log(1.0/2.0));/* D=0, A=1,*/
+        junctionbox.doubleArray_setitem(vData2,2, Math.log(1.0/4.0));/* D=1, A=0,*/
+        junctionbox.doubleArray_setitem(vData2,3, Math.log(3.0/4.0));/* D=1, A=1,*/
+
+        SWIGTYPE_p_double vData3 = junctionbox.new_doubleArray(4);
+        junctionbox.doubleArray_setitem(vData3,0, Math.log(1.0/4.0));/* D=0, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,1, Math.log(3.0/4.0));/* D=0, B=1,*/
+        junctionbox.doubleArray_setitem(vData3,2, Math.log(2.0/4.0));/* D=1, B=0,*/
+        junctionbox.doubleArray_setitem(vData3,3, Math.log(2.0/4.0));/* D=1, B=1,*/
+
+        SWIGTYPE_p_double vData4 = junctionbox.new_doubleArray(2);
+        junctionbox.doubleArray_setitem(vData4,0, Math.log(1.0/4.0));/* D=0*/
+        junctionbox.doubleArray_setitem(vData4,1, Math.log(3.0/4.0));/* D=1*/
+
+        SWIGTYPE_p_List parents1, parents2, noParents;
+        parents1 = junctionbox.List_Create();
+        junctionbox.List_Append(parents1,A.getVoidPointer());
+        junctionbox.List_Append(parents1,B.getVoidPointer());
+
+        parents2 = junctionbox.List_Create();
+        junctionbox.List_Append(parents2,D.getVoidPointer());
+
+        noParents = junctionbox.List_Create();
+
+        SWIGTYPE_p_Pot p1,p2,p3,p4;
+        p1 = junctionbox.Pot_CreateTabular("cptPot",vs1,vData1);
+        p2 = junctionbox.Pot_CreateTabular("cptPot",vs2,vData2);
+        p3 = junctionbox.Pot_CreateTabular("cptPot",vs3,vData3);
+        p4 = junctionbox.Pot_CreateTabular("cptPot",vs4,vData4);
+
+        SWIGTYPE_p_CPT cpt1,cpt2,cpt3,cpt4;
+        cpt1 = junctionbox.CPT_Create_ParentList(parents1,C,p1);
+        cpt2 = junctionbox.CPT_Create_ParentList(parents2,A,p2);
+        cpt3 = junctionbox.CPT_Create_ParentList(parents2,B,p3);
+        cpt4 = junctionbox.CPT_Create_ParentList(noParents,D,p4);
+
+        SWIGTYPE_p_List tables = junctionbox.List_Create();
+        junctionbox.List_Append(tables,cpt1.getVoidPointer());
+        junctionbox.List_Append(tables,cpt2.getVoidPointer());
+        junctionbox.List_Append(tables,cpt3.getVoidPointer());
+        junctionbox.List_Append(tables,cpt4.getVoidPointer());
+
+        vs5 = junctionbox.VariableSet_Create(o);
+        junctionbox.VariableSet_Add(vs5,D);
+        SWIGTYPE_p_Observation obsDIs1 = junctionbox.Observation_CreateLog(vs5,1);
+        SWIGTYPE_p_List obs = junctionbox.List_Create();
+        junctionbox.List_Append(obs,obsDIs1.getVoidPointer());
+
+        SWIGTYPE_p_BNet bn = junctionbox.BNet_Create_List2(o, tables, obs);
+        return bn;
+    }
+
+
+    public static void testWithoutObservations(){
+        SWIGTYPE_p_BNet  bn = Main.BuildSimpleBNet();//junctionbox.BuildSimpleBNet();
+        System.out.println(SWIGTYPE_p_BNet.getCPtr(bn));
+        SWIGTYPE_p_VertexOrdering o = junctionbox.BNet_StateSpaceWeightedElimOrdering(bn);
+        junctionbox.BNet_BuildElimTree(bn, o);
+        junctionbox.BNet_InitializePotentials(bn);
+        junctionbox.Print_BNet(bn);
+        junctionbox.BNet_CollectEvidence(bn);
+        junctionbox.Print_BNet(bn);
+        junctionbox.BNet_DistributeEvidence(bn);
+        junctionbox.Print_BNet(bn);
+    }
+    public static void testWithObservations(){
+        SWIGTYPE_p_BNet  bn = Main.BuildSimpleBNetWithObs();//junctionbox.BuildSimpleBNet();
+        System.out.println(SWIGTYPE_p_BNet.getCPtr(bn));
+        SWIGTYPE_p_VertexOrdering o = junctionbox.BNet_StateSpaceWeightedElimOrdering(bn);
+        junctionbox.BNet_BuildElimTree(bn, o);
+        junctionbox.BNet_InitializePotentials(bn);
+        junctionbox.Print_BNet(bn);
+        junctionbox.BNet_CollectEvidence(bn);
+        junctionbox.Print_BNet(bn);
+        junctionbox.BNet_DistributeEvidence(bn);
+        junctionbox.Print_BNet(bn);
+    }
+    public static void testWithObservationsLog(){
+        SWIGTYPE_p_BNet  bn = Main.BuildSimpleBNetWithObsLog();//junctionbox.BuildSimpleBNet();
+        System.out.println(SWIGTYPE_p_BNet.getCPtr(bn));
+        SWIGTYPE_p_VertexOrdering o = junctionbox.BNet_StateSpaceWeightedElimOrdering(bn);
+        junctionbox.BNet_BuildElimTree(bn, o);
+        junctionbox.BNet_InitializePotentialsLog(bn);
+        junctionbox.Print_BNetLog(bn);
+        junctionbox.BNet_CollectEvidenceLog(bn);
+        junctionbox.Print_BNetLog(bn);
+        junctionbox.BNet_DistributeEvidenceLog(bn);
+        junctionbox.Print_BNetLog(bn);
+    }
+    public static void main(String [] args){
+        System.loadLibrary("junctionbox");
+        Main.testWithoutObservations();
+        Main.testWithObservations();
+	Main.testWithObservationsLog();
+    }
+
+}
+

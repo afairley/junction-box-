@@ -1,0 +1,12 @@
+CFLAGS:= ${CHECK_INCLUDE} ${GRAPHVIZ_HEADERS} ${CFLAGS}
+LDFLAGS:=${JB_UTIL_LDFLAGS} ${GRAPHVIZ_LIBRARIES} ${LDFLAGS}
+FILES=Test_JB_Inference.c
+STATIC_LIBS = ${CHECK_LIB_PATH}  ${JB_INFERENCE_LIB_PATH} ${JB_JT_LIB_PATH} \
+	      ${JB_MODEL_LIB_PATH} ${JB_POT_LIB_PATH} ${JB_GRAPH_LIB_PATH} \
+	      ${JB_UTIL_LIB_PATH}
+
+all: Test_JB_Inference 
+Test_JB_Inference: Test_JB_Inference.c
+	gcc  ${CFLAGS} ${LDFLAGS} Test_JB_Inference.c ${STATIC_LIBS} \
+	    -o ${TESTBIN}/Test_JB_Inference
+

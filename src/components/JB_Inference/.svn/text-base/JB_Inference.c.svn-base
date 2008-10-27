@@ -1,0 +1,324 @@
+#include"JB_Inference.h"
+
+/*Compare vertices first on total degree, then break ties *
+ * by comparing cardinalities of associated variable      */
+int vtx_SSW_cmp( const void *v1, const void *v2){
+  Vertex *vtx1 = *(Vertex **)v1;
+  Vertex *vtx2 = *(Vertex **)v2;
+  //vtx2 - vtx1 because I followed Cowell et. al. 's strange backwards
+  //elimination algorithm
+  int ret = Vertex_Totdegree(vtx2) - Vertex_Totdegree(vtx1);
+  if(ret == 0)
+    ret = ( (Variable*)vtx2->variable )->cardinality - 
+      ( (Variable*)vtx1->variable )->cardinality;
+  return ret;
+}
+
+VertexOrdering *BNet_StateSpaceWeightedElimOrdering(BNet *this){
+  VertexOrdering *ret = (VertexOrdering*)jballoc(sizeof(VertexOrdering));
+
+  Graph *g = this->initialGraph;
+  int i, numVertices = Graph_GetNumVertices(g);
+  ret->size = numVertices;
+						
+  Vertex **vertices = jballoc(sizeof(Vertex*) * numVertices);
+  //TODO Iterating through vertices of a graph is inefficent as impl.
+  //TODO(cont.) for now, I just go into the guts to do things quickly
+  //TODO(cont.) This should be made unecessary
+  VertexMap *vmap = g->vertices;
+  Map_Element *itr = vmap->first;
+  for(i=0; itr  != NULL; itr = itr->next, i++){
+    vertices[i] = (Vertex*)itr->contents;
+    //Store a reference to the apropos vbl in the vertex for sorting
+    int vblRank = 
+      VariableOrdering_GetVariableRankByLabel(this->vbls, 
+					      Vertex_GetLabel(vertices[i])
+					      );
+    vertices[i]->variable = (this->vbls->vbls)[vblRank];
+  }
+  qsort(vertices, numVertices,
+	sizeof(Vertex*),  vtx_SSW_cmp);
+  ret->vertices = vertices; 
+  return ret;
+}
+
+void BNet_BuildElimTree(BNet *this, VertexOrdering *o){
+  //TODO detangle memory management, references to vertices
+  Graph *moral = MoralGraph(this->initialGraph);
+  ElimSetCollection *esc = GatherElimSets(moral,o,this->vbls);
+  ElimSetCollection_RemoveNonCliques(esc,o);
+  this->moral = moral;//TODO don't keep this around
+  this->elimCliques = esc;
+  this->elimTree = ElimTree_Create(esc);
+  this->numCliques = Graph_GetNumVertices(this->elimTree);
+  this->numSeps = Graph_GetNumEdges(this->elimTree);
+  //Allocate space for pointers that will allow Potential manipulation
+  //without walking the graph, for normalization etc...
+  this->seperatorPots = jballoc(sizeof(Pot**) * this->numSeps);
+  this->cliquePots = jballoc(sizeof(Pot**) * this->numCliques);
+}
+
+void BNet_InitializePotentials(BNet *this){
+  //initialize seperator potentials
+  EdgeItr *eitr = Graph_GetEdgeItr(this->elimTree);
+  Edge *curEdge;
+  int i = 0,j;
+  for(curEdge = EdgeItr_GetCurrent(eitr);
+      curEdge != NULL;
+      curEdge = EdgeItr_Advance(eitr)){
+    VariableSet *vbls = VariableSet_CreateFromBv(this->vbls,
+	   				 ((ElimSet*)curEdge->elim_set)->bv);
+    curEdge->pot = Pot_CreateTabularUnity(Edge_GetSrcSink(curEdge),vbls);
+    ((Pot*)curEdge->pot)->owner = curEdge;
+    curEdge->mulMemo = MulMemo_Create();
+    this->seperatorPots[i++] = (Pot**)&(curEdge->pot);
+  }
+  VertexItr *vitr = Graph_GetVertexItr(this->elimTree);
+  Vertex *curVertex;
+  i = 0;
+  //initialize clique potentials
+  for(curVertex = VertexItr_GetCurrent(vitr);
+      curVertex != NULL;
+      curVertex = VertexItr_Advance(vitr)){
+    VariableSet *vbls = VariableSet_CreateFromBv(this->vbls,
+	   				 ((ElimSet*)curVertex->elim_set)->bv);
+    curVertex->pot = Pot_CreateTabularUnity(Vertex_GetLabel(curVertex),vbls);
+    ((Pot*)curVertex->pot)->owner = curVertex;
+    curVertex->margMemo = MulMemo_Create();
+    this->cliquePots[i++] = (Pot**) &(curVertex->pot);
+  }
+  //multiply CPTs into clique potentials
+  for(i =0; i < this->numTables; i++){
+    Pot *curTable = (Pot*)this->tables[i]->pot;
+    VariableSet *curVbls = curTable->vbls;
+    for(j = 0; j < this->numCliques; j++){
+      Pot *curClique = *(this->cliquePots[j]);
+      if(VariableSet_ContainedIn(curVbls,curClique->vbls)){
+	curVertex = (Vertex*)curClique->owner;
+	MulInd *mi = MulMemo_GetMargInd(curVertex->margMemo,
+					curClique->vbls,
+					curVbls);
+	Pot_ProductTabular(curTable,curClique,mi);
+	break;
+      }
+    }
+  }
+}
+
+
+
+void BNet_EnterEvidence(BNet *this, Evidence *e);
+void BNet_ComputeSumMarginals(BNet *this);
+
+/* Since the index structure may be in either the receiver,
+ * We look in both.
+ * Actually, the way this is going to work, all memos will be in the edges
+ * Should have just done it that way by design.
+ * TODO refactor this */
+MulInd *find_marg_indices(Vertex *caller, Edge *sep){
+  VariableSet *vbls = ((Pot*)sep->pot)->vbls;
+  VariableSet *target = ((Pot*)caller->pot)->vbls;
+  MulInd *ret = MulMemo_GetMulInd((MulMemo*)sep->mulMemo, vbls, target);
+  return ret;
+}
+
+MulInd *find_mul_indices(Vertex *receiver, Edge *sep){
+  VariableSet *vbls = ((Pot*)sep->pot)->vbls;
+  VariableSet *target = ((Pot*)receiver->pot)->vbls;
+  MulInd *ret = MulMemo_GetMulInd((MulMemo*)sep->mulMemo, vbls, target);
+  return ret;
+}
+
+void MessagePass(Vertex *receiver, Vertex *caller, Edge *sep){
+  //log
+  /*printf("\nMessage passed from %s to %s .\n" ,
+	 Vertex_GetLabel(caller),
+	 Vertex_GetLabel(receiver) );*/
+  MulInd *margInd = find_marg_indices(caller, sep);
+  //log
+  /*  printf("\n%s marginalized via %s\n", 
+	 Vertex_GetLabel(caller),
+	 MulInd_ToString(margInd));*/
+  Pot *marg = Pot_SumMarginTabular((Pot*)caller->pot, margInd);
+  /*  printf("\nMarginalized to \n%s\n", Pot_ToString(marg));*/
+  Pot *updateRatio = Pot_UpdateRatioTabular(marg, (Pot*) sep->pot);
+  /*  printf("\n UpdateRatio is \n%s\n", Pot_ToString(updateRatio));*/
+  MulInd *mulInd = find_mul_indices(receiver, sep);
+/*   printf("\nThis will be mul'ed into %s via \n  %s\n",  */
+/* 	 Vertex_GetLabel(receiver), */
+/* 	 MulInd_ToString(mulInd)); */
+  Pot_ProductTabular(updateRatio, (Pot*)receiver->pot, mulInd);
+  Pot_DestroyTabular((Pot*)sep->pot);
+  sep->pot = marg;
+}
+
+/*Mark this in marks.
+ *Call Vertex_CollectEvidence on each of this's unmarked nghbrs
+ *Call Message_Pass(caller, this)*/
+void Vertex_CollectEvidence(Vertex *this,  Vertex *caller,
+			    Edge *backsep, VertexSet *marks){
+  //mark
+  VertexSet_Add(marks, this);
+
+  //recurse
+  NeighborItr *itr = Graph_GetNeighborItr(this->owner, this);
+  Vertex *nghbr;
+  Edge *fwdsep;
+  for( nghbr= NeighborItr_GetCurrent(itr);
+       nghbr != NULL;
+       nghbr= NeighborItr_Advance(itr)){
+    if(!VertexSet_ContainsVertex(marks, nghbr)){
+      fwdsep = NeighborItr_GetCurrentEdge(itr);
+      Vertex_CollectEvidence(nghbr,this, fwdsep, marks);
+    }
+  }
+
+  //MessagePass
+  if(caller != NULL)
+    MessagePass(caller,this, backsep);
+}//END Vertex_CollectEvidence
+
+/*Generate a VertexSet to pass around as a marking structure
+ *Call Vertex_CollectEvidence(fstVertex, NULL, marks) */ 
+void BNet_CollectEvidence(BNet *this){
+  VertexOrdering *o = defaultVertexOrdering(this->elimTree);
+  VertexSet *marks = VertexSet_Create(o);
+  Vertex *fstVertex = o->vertices[0];
+  Vertex_CollectEvidence(fstVertex, NULL, NULL, marks);
+  VertexSet_Destroy(marks);
+}
+
+/*Mark this in marks
+ *Call MessagePass(nghbr, this) for each unmarked nghbr
+ *Call Vertex_DistributeEvidence on each of this's unmarked neighbors*/ 
+void Vertex_DistributeEvidence(Vertex *this, VertexSet *marks){
+  //mark
+  VertexSet_Add(marks, this);
+
+  //MessagePass
+  NeighborItr *itr = Graph_GetNeighborItr(this->owner, this);
+  Vertex *nghbr;
+  Edge *fwdsep;
+  for( nghbr= NeighborItr_GetCurrent(itr);
+       nghbr != NULL;
+       nghbr= NeighborItr_Advance(itr)){
+    if(!VertexSet_ContainsVertex(marks, nghbr)){
+      fwdsep = NeighborItr_GetCurrentEdge(itr);
+      MessagePass(nghbr,this,fwdsep);
+    }
+  }
+
+  //recurse
+  for( nghbr= NeighborItr_GetCurrent(itr);
+       nghbr != NULL;
+       nghbr= NeighborItr_Advance(itr)){
+    if(!VertexSet_ContainsVertex(marks, nghbr))
+      Vertex_DistributeEvidence(nghbr, marks);
+  }
+}
+
+/*Generate a VertexSet to pass around as a marking structure
+ *Call Vertex_DistribueEvidence(fstVertex, marks) */ 
+void BNet_DistributeEvidence(BNet *this){
+  VertexOrdering *o = defaultVertexOrdering(this->elimTree);
+  VertexSet *marks = VertexSet_Create(o);
+  Vertex *fstVertex = o->vertices[0];
+  Vertex_DistributeEvidence(fstVertex, marks);
+  VertexSet_Destroy(marks);
+}
+
+//methods for SWIG testing convenience. REMOVE
+BNet *BuildSimpleBNet(){
+  Variable *A,*B, *C, *D;
+  List *l;
+  A = Variable_CreateDiscrete("A",2,NULL);
+  B = Variable_CreateDiscrete("B",2,NULL);
+  C = Variable_CreateDiscrete("C",2,NULL);
+  D = Variable_CreateDiscrete("D",2,NULL);
+  l = List_Create();
+  //Create a VariableOrdering D A B C
+  List_Append(l,D);
+  List_Append(l,A);
+  List_Append(l,B);
+  List_Append(l,C);
+  VariableOrdering *o = VariableOrdering_Create(l);
+
+  //Create a table for P(C|A,B)
+  VariableSet *vs1 = VariableSet_Create(o);
+  VariableSet_Add(vs1,A);
+  VariableSet_Add(vs1,B);
+  VariableSet_Add(vs1,C);
+  double *valueData1 = (double*)jballoc(sizeof(double) *8);
+  valueData1[0] = 1.0/2.0;/* A=0, B=0, C=0 */
+  valueData1[1] = 1.0/2.0;/* A=0, B=0, C=1 */
+  valueData1[2] = 3.0/4.0;/* A=0, B=1, C=0 */
+  valueData1[3] = 1.0/4.0;/* A=0, B=1, C=1 */
+  valueData1[4] = 1.0/2.0;/* A=1, B=0, C=0 */
+  valueData1[5] = 1.0/2.0;/* A=1, B=0, C=1 */
+  valueData1[6] = 3.0/4.0;/* A=1, B=1, C=0 */
+  valueData1[7] = 1.0/4.0;/* A=1, B=1, C=1 */
+  Pot *p1 = Pot_CreateTabular("cptPot",vs1,valueData1);
+  Variable **parents1 = jballoc(sizeof(Variable*)*2);
+  parents1[0]=A;
+  parents1[1]=B;
+  CPT *cpt1 = CPT_Create(parents1, 2, C, p1);
+  
+  //Create a table for P(A|D)
+  VariableSet *vs2 = VariableSet_Create(o);
+  VariableSet_Add(vs2,A);
+  double *valueData2 = (double*)jballoc(sizeof(double) *4);
+  valueData2[0] = 1.0/2.0;/* D=0, A=0,*/
+  valueData2[1] = 1.0/2.0;/* D=0, A=1,*/
+  valueData2[2] = 1.0/4.0;/* D=1, A=0,*/
+  valueData2[3] = 3.0/4.0;/* D=1, A=1,*/
+  Pot *p2 = Pot_CreateTabular("cptPot",vs2,valueData2);
+  Variable **parents2 = jballoc(sizeof(Variable*));
+  parents2[0]=D;
+  CPT *cpt2 = CPT_Create(parents2, 1, A, p2);
+
+  //Create a table for P(B|D)
+  VariableSet *vs3 = VariableSet_Create(o);
+  VariableSet_Add(vs3,B);
+  double *valueData3 = (double*)jballoc(sizeof(double) *4);
+  valueData3[0] = 1.0/4.0;/* D=0, B=0,*/
+  valueData3[1] = 3.0/4.0;/* D=0, B=1,*/
+  valueData3[2] = 2.0/4.0;/* D=1, B=0,*/
+  valueData3[3] = 2.0/4.0;/* D=1, B=1,*/
+  Pot *p3 = Pot_CreateTabular("cptPot",vs3,valueData3);
+  Variable **parents3 = jballoc(sizeof(Variable*));
+  parents3[0]=D;
+  CPT *cpt3 = CPT_Create(parents3, 1, B, p3);
+
+  //Create a table for P(D)
+  VariableSet *vs4 = VariableSet_Create(o);
+  VariableSet_Add(vs4,D);
+  double *valueData4 = (double*)jballoc(sizeof(double) *2);
+  valueData4[0] = 1.0/4.0;/* D=0*/
+  valueData4[1] = 3.0/4.0;/* D=1*/
+  Pot *p4 = Pot_CreateTabular("cptPot",vs4,valueData4);
+  CPT *cpt4 = CPT_Create(NULL, 0, D, p4);  
+
+  CPT **tables = (CPT**)jballoc(sizeof(CPT*)*4);
+  tables[0] = cpt1;
+  tables[1] = cpt2;
+  tables[2] = cpt3;
+  tables[3] = cpt4;
+
+  BNet *bn = BNet_Create(o,tables, 4);
+  return bn;
+}
+void Print_BNet(BNet *bn){
+  int i;
+  printf("\n************************************\n");
+  printf("Clique Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numCliques; i++){
+    printf("\n%s\n",Pot_ToString(*(bn->cliquePots[i])));
+  }
+  printf("\n************************************\n");
+  printf("Seperator Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numSeps; i++){
+    printf("\n %s \n",Pot_ToString(*(bn->seperatorPots[i])));
+  }
+}

@@ -1,0 +1,455 @@
+/*JB_Graph.c 
+ * Documentation in JB_Graph.h */
+#include "JB_Graph.h"
+
+//Prototypes for private functions
+
+Vertex *VertexMap_Get(VertexMap *this, char *name){
+  Map_Element *me = Map_Get(this,name);
+  if(me)
+    return (Vertex *)me->contents;
+  else 
+    return NULL;
+}
+void VertexMap_Add(VertexMap *this, Vertex *v){
+  Map_Element *me = jballoc(sizeof(Map_Element));
+  me->id = Vertex_GetLabel(v);
+  me->contents =v;
+  Map_Add(this, me);
+}
+
+char *VertexMap_ContentPrinter(Map_Element *me){
+  char *ret, *id, *vertexName;
+  id = me->id;
+  vertexName = Vertex_GetLabel(((Vertex*)me->contents));
+  ret = jballoc(strlen(id) + strlen(vertexName) + 4);
+  sprintf(ret, "%s \t %s\n", id, vertexName);
+  return ret;
+}
+
+Edge *EdgeMap_Get(EdgeMap *this, char *src_sink){
+  Map_Element *me = Map_Get(this,src_sink);
+  if(me)
+    return (Edge *)me->contents;
+  else
+    return NULL;
+}
+
+void EdgeMap_Add(EdgeMap *this, Edge *e){
+  Map_Element *me = jballoc(sizeof(Map_Element));
+  me->id = Edge_GetSrcSink(e);
+  me->contents =e;
+  Map_Add(this, me);
+}
+
+char *EdgeMap_ContentPrinter(Map_Element *me){
+  char *ret, *id,*srcsink;
+  id = me->id;
+  srcsink = Edge_GetSrcSink(((Edge*)me->contents));
+  ret = jballoc(strlen(id) + strlen(srcsink) + 4);
+  sprintf(ret, "%s \t %s\n", id, srcsink);
+  return ret;
+}
+
+Vertex *Vertex_Create(Graph *owner, char *name){
+  Vertex *ret =  jballoc(sizeof(Vertex)); 
+  ret->node = agnode(owner->graph, name, TRUE);    
+  ret->owner = owner;
+  ret->label = String_Create(name);
+  return ret;
+}
+Vertex *Vertex_Wrap(Graph *owner, char *name, Agnode_t *node){
+  Vertex *ret =  jballoc(sizeof(Vertex)); 
+  ret->node = node;
+  ret->owner = owner;
+  ret->label = String_Create(name);
+  return ret;
+}
+
+char *Vertex_GetLabel(Vertex *v){
+  return v->label;
+}
+
+void Vertex_Destroy(Vertex *v){
+  jbfree(v);
+}
+Edge *Edge_Create(Graph *owner, Vertex *src, Vertex *sink){
+  char *srcname, *sinkname;
+  Edge *ret =  jballoc(sizeof(Edge));
+  ret->edge = agedge(owner->graph, src->node, sink->node, NULL, TRUE);
+  ret->owner = owner;
+  srcname =Vertex_GetLabel(src);
+  sinkname =Vertex_GetLabel(sink);
+  ret->src_sink = jballoc(strlen(srcname)
+			 +strlen(sinkname)
+			 +2);//one for space, one for term NULL
+  strcat(ret->src_sink,srcname);
+  strcat(ret->src_sink," ");
+  strcat(ret->src_sink,sinkname);
+  return ret;
+}
+Edge *Edge_Wrap(Graph *owner, Vertex *src, Vertex *sink, Agedge_t *edge){
+  char *srcname, *sinkname;
+  Edge *ret = jballoc(sizeof(Edge));
+  ret->edge = edge;
+  ret->owner = owner;
+  srcname =Vertex_GetLabel(src);
+  sinkname =Vertex_GetLabel(sink);
+  ret->src_sink = jballoc(strlen(srcname)
+			  +strlen(sinkname)
+			  +2);//one for space, one for term NULL
+  strcat(ret->src_sink,srcname);
+  strcat(ret->src_sink," ");
+  strcat(ret->src_sink,sinkname);
+  return ret;
+  
+}
+
+void Edge_Destroy(Edge *this){
+  jbfree(this->src_sink);
+  jbfree(this);
+}
+
+//note that the graph object DOES NOT use this for the key into it's hash
+char* Edge_GetLabel(Edge *this){
+  return agnameof(this->edge);
+}
+
+char* Edge_GetSrcSink(Edge *this){
+  return this->src_sink;
+}
+Vertex* Edge_GetTail(Edge *this){
+  return Graph_GetVertex(this->owner,agnameof(agtail(this->edge)));
+}
+Vertex* Edge_GetHead(Edge *this){
+  return Graph_GetVertex(this->owner,agnameof(aghead(this->edge)));
+} 
+
+Graph *Graph_common_init(){
+  Graph *ret = jballoc(sizeof(Graph));
+  ret->vertices=Map_Create();
+  ret->edges=Map_Create();
+  return ret;
+}
+Graph *Graph_Wrap(Agraph_t *graph ){
+  Graph* ret = Graph_common_init();
+  ret->graph = graph;
+  return ret;
+}
+Graph *Graph_Create(char *name){
+  Graph* ret = Graph_common_init();
+  ret->graph = agopen(name,Agstrictdirected,NULL);
+  return ret;
+}
+Graph *Graph_Create_Undirected(char *name){
+  Graph* ret = Graph_common_init();
+  ret->graph = agopen(name,Agstrictundirected,NULL);
+  return ret;
+}
+
+char* Graph_GetLabel(Graph *g){
+  return agnameof(g->graph);
+}
+
+/*Reads in a graph in .dot format from filename*/
+Graph *Graph_Read(char* filename){
+  FILE *ifp = fopen(filename, "r");
+  Agraph_t *reddit = agread(ifp, NULL);
+  Graph *ret = Graph_Wrap(reddit);
+  fclose(ifp);
+  return ret;
+}
+
+/*TODO: Look at what the return from this means, it's probably just an errno*/
+int Graph_Write(Graph *g, char *filename){
+  FILE *ofp = fopen(filename, "w");
+  Agraph_t *agraph_g = g->graph;
+  int ret =agwrite(agraph_g, ofp);
+  fclose(ofp);
+  return ret;
+}
+
+int Graph_Destroy(Graph *g){
+  int ret = agclose(g->graph);
+  jbfree(g);
+  return ret;
+}
+
+/*We do a tmpfile shuffle here because  graphviz implements
+  text output to files rather than buffers... grr*/
+//OS-DEPENDENT: stat
+char *Graph_ToGraphViz(Graph *g){
+  int i;
+  struct stat file_status;
+  FILE *temp;
+  Graph_Write(g, ".jbtmpfile");
+  fclose(temp);
+  temp = fopen(".jbtmpfile","w");
+  if(stat(".jbtmpfile", &file_status) != 0){
+    reportError( ERRSTRING(JB_Graph.c, Graph_ToGraphViz, STATFAILED) );
+  }
+  char *ret = jballoc(file_status.st_size +1);
+  for(i = 0; i < file_status.st_size; i++){
+    ret[i] = getc(temp);
+  }
+  ret[i] = 0;
+  return ret;
+}
+
+int Graph_VertexIndegree(Graph *g, Vertex *v){
+  return agdegree(g->graph, v->node, TRUE,FALSE);
+}
+
+int Graph_VertexOutdegree(Graph *g, Vertex *v){
+  return agdegree(g->graph, v->node, FALSE,TRUE);
+}
+
+int Graph_VertexTotdegree(Graph *g, Vertex *v){
+  return agdegree(g->graph, v->node, TRUE,TRUE);
+}
+
+
+Vertex *Graph_GetFstVertex(Graph *g ){
+  Agnode_t * agv = agfstnode(g->graph);
+  if(agv != NULL)
+    return Graph_GetVertex(g, agnameof(agv));
+  else
+    return NULL;
+}
+
+Vertex *Graph_GetNxtVertex(Graph *g, Vertex *v ){
+  Agnode_t * agv = agnxtnode(g->graph,v->node);
+  if(agv != NULL)
+    return Graph_GetVertex(g, agnameof(agv));
+  else
+    return NULL;
+}
+Edge *Graph_GetFstEdge(Graph *this, Vertex *v ){
+  Agedge_t * tmp = agfstedge(this->graph, v->node);
+  if(tmp != NULL){
+    Vertex *src, *sink;
+    src= Graph_GetVertex(this,agnameof(agtail(tmp)));
+    sink= Graph_GetVertex(this,agnameof(aghead(tmp)));
+    return Graph_GetEdge(this, src,sink);
+  }
+  else
+    return NULL;
+}
+
+Edge *Graph_GetNxtEdge(Graph *this, Vertex *v,  Edge *e ){
+  Agedge_t * tmp = agnxtedge(this->graph, e->edge, v->node);
+  if(tmp != NULL){
+    Vertex *src, *sink;
+    src= Graph_GetVertex(this,agnameof(agtail(tmp)));
+    sink= Graph_GetVertex(this,agnameof(aghead(tmp)));
+    return Graph_GetEdge(this, src,sink);
+  }
+  else
+    return NULL;
+}
+
+
+int Graph_IsDirected(Graph *g){
+  return agisdirected(g->graph);
+}
+
+
+Vertex *Graph_GetFstNeighbor(Graph *g, Vertex *v ){
+  Vertex *ret;
+  if(!(Graph_IsDirected(g)) ){
+    Agnode_t *src = v->node;
+    Agedge_t *tmp = agfstedge(g->graph, src);//agnxtedge is buggy, maybe fstedge too?
+    Agnode_t *tail,*head;
+    if(tmp == NULL)
+	  return NULL; // no edges
+    tail  = agtail(tmp);
+    head  = aghead(tmp);
+    //Undirected graphs need you to look both ways
+    ret = (src == tail ) ? 
+      Graph_GetVertex(g, agnameof(head)) : Graph_GetVertex(g, agnameof(tail));
+  }
+  else{
+    ret = NULL; 
+  }
+
+  return ret;
+}
+
+Vertex *Graph_GetNxtNeighbor(Graph *g, Vertex *v, Vertex *last){
+  Vertex *ret;
+  if(!(Graph_IsDirected(g)) ){
+    Agnode_t *src = v->node;
+    Agnode_t *sink = last->node;
+    Agnode_t *tail, *head;
+    Agedge_t *tmp = agedge(g->graph, src, sink, NULL, FALSE);
+    if(!tmp){
+      //edge not found, must be saved under other order of src sink
+      tmp = agedge(g->graph, sink, src, "", FALSE);
+      if(!tmp){
+	//edge not found, something very wrong
+	reportError(
+		    ERRSTRING(JB_Graph.c, Graph_GetNxtNeighbor, EDGENOTFOUND)
+		    );
+      }
+    }
+    //Work around a bug where cgraph infinitely returns the same edge
+    //save edge tail and head to make sure we're getting a new edge
+    tail = agtail(tmp);
+    head = aghead(tmp);
+    if(src == agtail(tmp)){
+      tmp = agnxtout(g->graph, tmp);
+      if(tmp == NULL
+	 ||
+	 ( (tail == agtail(tmp)) //check to ensure new edge
+                 &&  
+	   (head == aghead(tmp)) ) )
+	tmp = agfstin(g->graph, src);
+    }//end src == agtail
+  else{
+      tmp = agnxtin(g->graph,tmp);
+      if( tmp == NULL || ((tail == agtail(tmp)) //check to ensure new edge
+                 &&  
+	   (head == aghead(tmp)) ) )
+	return NULL;
+    }
+    if(tmp == NULL)
+      return NULL; // no more edges
+    tail  = agtail(tmp);
+    head = aghead(tmp);
+    //Undirected graphs are sloppy
+     ret = (src == tail ) ? 
+       Graph_GetVertex(g, agnameof(head)) : Graph_GetVertex(g, agnameof(tail));
+     return ret;
+  }
+  else
+    return NULL; //TODO Graph is directed, signal error
+  }
+
+  Vertex *Graph_GetFstChild(Graph *g, Vertex *v ){
+  Vertex *ret = NULL;
+  if(Graph_IsDirected(g)){
+      Agnode_t *src = v->node;
+      Agedge_t *tmp = agfstout(g->graph, src);
+      ret = Graph_GetVertex(g,agnameof(aghead(tmp)));
+  }
+  else{
+    ret = NULL;
+  }
+  return ret;
+}
+
+Vertex *Graph_GetNxtChild(Graph *g, Vertex *v, Vertex *last){
+  Agnode_t *src = v->node;
+  Agnode_t *sink = last->node;
+  Agedge_t *tmp = agedge(g->graph, src, sink, NULL, FALSE);
+   if(!tmp){
+      //edge not found, something very wrong
+     reportError(
+		 ERRSTRING(JB_Graph.c, Graph_GetNxtChild, EDGENOTFOUND)
+		  );
+   }
+   tmp = agnxtout(g->graph, tmp);
+   return Graph_GetVertex(g,agnameof(aghead(tmp)));
+}
+
+Vertex *Graph_GetFstParent(Graph *g, Vertex *v ){
+  Vertex *ret;
+  if(Graph_IsDirected(g)){
+    Agnode_t *src = v->node;
+    Agedge_t *tmp = agfstin(g->graph, src);
+    if(tmp){
+      ret = Graph_GetVertex(g,agnameof(agtail(tmp)));
+    }
+    else{
+      ret = NULL;
+    }
+  }
+  else{
+    ret = NULL;
+  }
+  return ret;
+}
+
+Vertex *Graph_GetNxtParent(Graph *g, Vertex *v, Vertex *last){
+  Agnode_t *child = v->node;
+  Agnode_t *parent = last->node;
+  Agedge_t *tmp = agedge(g->graph, parent ,child, NULL, FALSE);
+   if(!tmp){
+      //edge not found, something very wrong
+     reportError(
+		 ERRSTRING(JB_Graph.c, Graph_GetNxtChild, EDGENOTFOUND)
+		  );
+   }
+   tmp = agnxtin(g->graph, tmp);
+   if(tmp)
+     return Graph_GetVertex(g,agnameof(agtail(tmp)));
+   else
+     return NULL;
+}
+
+
+Vertex *Graph_AddVertex(Graph *g, char *name){
+  Vertex *ret = Vertex_Create(g, name);
+  VertexMap_Add(g->vertices, ret);
+  return ret;
+}
+
+Edge *Graph_AddEdge(Graph *g, Vertex *src, Vertex *sink ){
+  Edge *ret = Edge_Create(g, src, sink);
+  EdgeMap_Add(g->edges,ret);
+  return ret;
+}
+
+Vertex *Graph_GetVertex(Graph *g, char *name ){
+  Vertex *ret = NULL;
+  Agnode_t *tmp = NULL;
+  
+  //Memoized?
+  ret=VertexMap_Get(g->vertices,name);
+  if(ret)
+    return ret;
+  
+  tmp = agnode(g->graph, name, FALSE);
+  if(tmp){
+    ret = Vertex_Wrap(g,name,tmp);
+    VertexMap_Add(g->vertices,ret);
+    return ret;
+  }
+  else
+    return NULL;
+}
+
+Edge *Graph_GetEdge(Graph *g, Vertex *src, Vertex *sink ){
+  Edge *ret = NULL;
+  char *srcname, *sinkname, *src_sink;
+  srcname =Vertex_GetLabel(src);
+  sinkname =Vertex_GetLabel(sink);
+  src_sink = jballoc(strlen(srcname)
+			 +strlen(sinkname)
+			 +2);//one for space, one for term NULL
+  src_sink[0] = "\0";
+  strcat(src_sink, srcname);
+  strcat(src_sink, " ");
+  strcat(src_sink, sinkname);
+  ret = EdgeMap_Get(g->edges,src_sink);
+  if(ret != NULL ){
+    jbfree(src_sink);
+    return ret;
+  }
+  else{
+    jbfree(src_sink);
+    Agnode_t *n1, *n2;
+    Agedge_t *e;
+    n1 = src->node;
+    n2 = sink->node;
+    e = agedge(g->graph, n1, n2, NULL, FALSE);
+    if(e){
+      ret = Edge_Wrap(g,src,sink,e);
+      EdgeMap_Add(g->edges,ret);
+    }
+    else
+      ret =  NULL;
+    return ret;
+  }
+}
+

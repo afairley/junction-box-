@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/repos/JunctionBox/!svn/ver/21/include
+END
+JB_Inference.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/repos/JunctionBox/!svn/ver/21/include/JB_Inference.h
+END
+JB_Mem.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/repos/JunctionBox/!svn/ver/1/include/JB_Mem.h
+END
+JB_Model.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/repos/JunctionBox/!svn/ver/18/include/JB_Model.h
+END
+JB_Graph.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/repos/JunctionBox/!svn/ver/18/include/JB_Graph.h
+END
+uthash.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/repos/JunctionBox/!svn/ver/8/include/uthash.h
+END
+JB_Pot.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/repos/JunctionBox/!svn/ver/18/include/JB_Pot.h
+END
+BitVector.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/repos/JunctionBox/!svn/ver/17/include/BitVector.h
+END
+JB_JunctionTree.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/repos/JunctionBox/!svn/ver/18/include/JB_JunctionTree.h
+END
+JB_Util.h
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/repos/JunctionBox/!svn/ver/18/include/JB_Util.h
+END

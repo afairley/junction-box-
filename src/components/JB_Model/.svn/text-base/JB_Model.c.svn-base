@@ -1,0 +1,56 @@
+#include"JB_Model.h"
+CPT *CPT_Create(Variable **parents, int numParents, 
+		Variable *tableFor, Pot *pot){
+  CPT *ret = jballoc(sizeof(CPT));
+  ret->parents = parents;
+  ret->numParents = numParents;
+  ret->tableFor = tableFor;
+  ret->allvbls = pot->vbls;
+  ret->pot = pot;
+  
+  return ret;
+}
+Variable *CPT_GetIthParent(CPT *this, int i){
+  //TODO could add a bounds check here...
+  return this->parents[i];
+}
+void CPT_Destroy(CPT *this){
+  //TODO Revisit memory management when end-to-end is done
+  jbfree(this);
+}
+
+BNet *BNet_Create(VariableOrdering *vbls, 
+		  CPT **tables, 
+		  int numTables){
+  int i,j;
+  BNet *ret = jballoc(sizeof(BNet));
+  ret->vbls = vbls;
+  ret->tables = tables;
+  ret->numTables =numTables;
+  /*Set up the BNet Graph*/
+  ret->initialGraph = Graph_Create("BNet",TRUE);
+  Graph *g = ret->initialGraph;
+  for(i = 0; i < vbls->size; i++){
+    Variable *v = (vbls->vbls)[i];
+    Graph_AddVertex(g, Variable_GetLabel(v) );
+  }
+  for(i = 0; i < numTables; i++){
+    CPT *curTab = tables[i];
+    Variable *child = curTab->tableFor;
+    Vertex *childV = Graph_GetVertex(g, Variable_GetLabel(child));
+    for(j =0; j < curTab->numParents; j++){
+      Variable *parent = CPT_GetIthParent(curTab,j);
+      Vertex *parentV = Graph_GetVertex(g, Variable_GetLabel(parent));
+      Graph_AddEdge(g,parentV,childV);
+    }
+  }
+  return ret;
+}
+void BNet_Destory(BNet *this){
+  int i;
+  Graph_Destroy(this->initialGraph);
+  //TODO Free ElimTree, cliques, seperators, 
+  for(i = 0; i < this->numTables; i++)
+    CPT_Destroy(this->tables[i]);
+  jbfree(this);
+}

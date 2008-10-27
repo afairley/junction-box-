@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/repos/JunctionBox/!svn/ver/21/src/components/JB_Inference
+END
+JB_Inference.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/repos/JunctionBox/!svn/ver/21/src/components/JB_Inference/JB_Inference.c
+END
+VertexSet.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/repos/JunctionBox/!svn/ver/18/src/components/JB_Inference/VertexSet.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/repos/JunctionBox/!svn/ver/19/src/components/JB_Inference/Makefile
+END

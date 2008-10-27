@@ -1,0 +1,8 @@
+package edu.umb.junctionbox;
+
+/**A class to run a bunch of sanity checks on a JunctionTree afte evidence
+ * propagation etx.*/
+public class JunctionTreeTester{
+    public JunctionTreeTester(){
+    }
+}

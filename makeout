@@ -1,0 +1,15 @@
+JBHOME is  /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox
+make -C src all
+make[1]: Entering directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src'
+make -C components all
+make[2]: Entering directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components'
+make -C JB_Util all
+make[3]: Entering directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components/JB_Util'
+make[3]: Nothing to be done for `all'.
+make[3]: Leaving directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components/JB_Util'
+make -C JB_Graph all
+make[3]: Entering directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components/JB_Graph'
+gcc -shared -I/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/lib/bin/graphviz/include -I/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/lib/bin/graphviz/include/graphviz -Wall  -g   -I/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/include /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/lib/bin/graphviz/lib/libcgraph.so /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/lib/bin/graphviz/lib/libcdt.so JB_Graph.c -o /home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/bin/JB_Graph.o
+make[3]: Leaving directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components/JB_Graph'
+make[2]: Leaving directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src/components'
+make[1]: Leaving directory `/home/vegas/Documents/Academic/Masters_Thesis/code/JunctionBox/src'

@@ -1,0 +1,6 @@
+public class Table{
+    public String forVbl;
+    public ArrayList<String> given = new ArrayList<String>();
+    public SWIGTYPE_p_double table;
+    public SWIGTYPE_p_CPT pointer;
+}

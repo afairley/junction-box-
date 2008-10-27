@@ -1,0 +1,36 @@
+#ifndef H_JB_INFER
+#define H_JB_INFER
+#include "JB_Model.h"
+#include "JB_JunctionTree.h"
+typedef struct evidence Evidence;
+typedef struct vertex_set VertexSet;
+
+struct evidence{
+};
+
+struct vertex_set{
+  BitVector *bv;
+  VertexOrdering *o;
+};
+
+
+VertexSet *VertexSet_Create();
+void VertexSet_Destroy(VertexSet *this);
+int VertexSet_Contains(VertexSet *this, VertexSet *other);
+int VertexSet_ContainsVertex(VertexSet *this, Vertex *v);
+void VertexSet_Add(VertexSet *this, Vertex *v);
+char *VertexSet_ToString(VertexSet *this);
+
+VertexOrdering *BNet_StateSpaceWeightedElimOrdering(BNet *this);
+
+void BNet_BuildElimTree(BNet *this, VertexOrdering *o);
+void BNet_InitializePotentials(BNet *this);
+void BNet_EnterEvidence(BNet *this, Evidence *e);
+void BNet_ComputeSumMarginals(BNet *this);
+void BNet_CollectEvidence(BNet *this);
+void BNet_DistributeEvidence(BNet *this);
+
+//added for simple SWIG testing. REMOVE
+BNet *BuildSimpleBNet();
+void PrintBNet(BNet *bn);
+#endif

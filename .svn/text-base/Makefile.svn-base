@@ -1,0 +1,107 @@
+# Makefile for JunctionBox 0.01
+# Sets up environment for recursive invocations of make in subdirs
+export
+######################################################################
+#### Set up paths to resources
+#### These require updating on a new machine
+#### TODO: Don't do this... 
+######################################################################
+# Users should set JBHOME to point at the directory containing this
+# Makefile. We do it if it isn't done yet. 
+JBHOME ?= ${shell pwd}
+OS=linux
+######################################################################
+####
+#### JUNCTION_BOX PRODUCTS
+####
+######################################################################
+INCLUDE:=${JBHOME}/include
+BIN:=${JBHOME}/bin
+TESTBIN:=${JBHOME}/bin/test
+SRCDIR:=${JBHOME}/src
+JB_UTIL_LDFLAGS:=-lm
+#Products
+JB_UTIL_LIB_PATH:=${BIN}/JB_Util.a
+JB_GRAPH_LIB_PATH:=${BIN}/JB_Graph.o 
+JB_JT_LIB_PATH:=${BIN}/JB_JunctionTree.o
+JB_POT_LIB_PATH:=${BIN}/JB_Pot.o 
+JB_MODEL_LIB_PATH:=${BIN}/JB_Model.o
+JB_INFERENCE_LIB_PATH:=${BIN}/JB_Inference.a
+PRODUCTS:=${JB_UTIL_LIB_PATH} ${JB_GRAPH_LIB_PATH} ${JB_JT_LIB_PATH} \
+	  ${JB_POT_LIB_PATH} ${JB_MODEL_LIB_PATH} ${JB_INFERENCE_LIB_PATH} 
+LIB_NAME=libjunctionbox.so.1
+LIB_MINOR_VERSION:=.0.1
+LIB_DEST:=${BIN}/${LIB_NAME}${LIB_MINOR_VERSION} 
+SWIG_I_DIR:=${SRCDIR}/swig_i
+SWIG_I_FILE_JAVA:=${SWIG_I_DIR}/junctionbox_java.i
+SWIG_SRC_OUT_DIR:=${SRCDIR}/swig_o
+SWIG_SRC_OUT_JAVA_DIR:=${SWIG_SRC_OUT_DIR}/java
+SWIG_JAVA_INCLUDES:=-I/usr/java/jdk1.6.0_01/include \
+			-I/usr/java/jdk1.6.0_01/include/${OS}
+SWIG_WRAPPER:=${SWIG_I_DIR}/junctionbox_java_wrap.c
+######################################################################
+####
+#### CHECK Unit Test Framework
+####
+######################################################################
+CHECK_INCLUDE=-I${JBHOME}/lib/bin/check/include
+#The path to the check library needs to be provided to 
+#test builds. 
+#TODO: Move check into build tree, and put the resulting build in
+#lib/bin
+CHECK_LIB_PATH=${JBHOME}/lib/bin/check/lib/libcheck.a
+CHECK_LINK=-lcheck
+######################################################################
+####
+#### GRAPHVIZ
+####
+######################################################################
+# Needs to point at the root of a graphviz install tree produced
+# by make install
+# Initially using version 2.16
+GRAPHVIZ_VERSION=2.16
+GRAPHVIZ_HOME=${JBHOME}/lib/bin/graphviz
+GRAPHVIZ_LIB=${GRAPHVIZ_HOME}/lib
+GRAPHVIZ_INCLUDE=${GRAPHVIZ_HOME}/include
+GRAPHVIZ_HEADERS=-I${GRAPHVIZ_INCLUDE} \
+			 -I${GRAPHVIZ_INCLUDE}/graphviz
+GRAPHVIZ_LIBRARIES=${GRAPHVIZ_LIB}/libcgraph.so ${GRAPHVIZ_LIB}/libcdt.so
+
+######################################################################
+####
+#### COMPILER FLAGS
+####
+######################################################################
+CC=gcc
+DEBUG=-ggdb3
+OPTIMIZE=#-o2
+VERBOSE=#-v
+WARN=-Wall
+FPIC=-fpic
+LIBRARY_BUILD_FLAGS=-shared -Wl,-soname,${LIB_NAME} \
+	${SWIG_WRAPPER}		\
+	-o ${LIB_DEST} ${PRODUCTS} \
+			-lm
+
+CFLAGS:=${WARN}  ${DEBUG} ${FPIC} ${OPTIMIZE} \
+	${VERBOSE} -I${INCLUDE}
+
+SUBDIRS:=src
+.PHONY: ${SUBDIRS} clean
+all:${SUBDIRS} library
+${SUBDIRS}:
+	@echo 'JBHOME is ' ${JBHOME}
+	${MAKE} -C $@ all
+library:
+	${CC} ${SWIG_JAVA_INCLUDES} ${CFLAGS} ${GRAPHVIZ_HEADERS} ${LIBRARY_BUILD_FLAGS}
+# javaswig:
+# 	swig -java junctionbox_java.i -outdir ${SWIG_SRC_OUT_JAVA_DIR}
+# 	cd  ${SWIG_SRC_OUT_JAVA_DIR}
+# 	gcc -c ${SWIG_SRC_OUT_JAVA_DIR}/junctionbox.c\
+# 	 ${SWIG_SRC_OUT_JAVA_DIR}/junctionbox_wrap.c \
+# 	${SWIG_JAVA_INCLUDES}
+# 	gcc -shared  ${SWIG_SRC_OUT_JAVA_DIR}/junction_box.o \
+# 		     ${SWIG_SRC_OUT_JAVA_DIR}/junction_box_wrap.o \
+# 		     -o libjunctionbox_java.so.1.01
+# 	cd -
+	

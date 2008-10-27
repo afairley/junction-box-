@@ -1,0 +1,40 @@
+#ifndef H_JB_MODEL
+#define H_JB_MODEL
+#include "JB_Util.h"
+#include "JB_Graph.h"
+#include "JB_Pot.h"
+
+typedef struct conditional_probability_table CPT;
+typedef struct bayes_net BNet;
+
+struct bayes_net{
+  VariableOrdering *vbls;
+  CPT **tables;
+  int numTables;
+  Graph *initialGraph;
+  Graph *moral;
+  ElimTree *elimTree;
+  ElimSetCollection *elimCliques;
+  Pot ***cliquePots;
+  int numCliques;
+  Pot ***seperatorPots;
+  int numSeps;
+};
+
+struct conditional_probability_table{
+  Variable **parents;
+  int numParents;
+  Variable *tableFor;
+  VariableSet *allvbls;
+  Pot *pot;
+};
+
+CPT *CPT_Create(Variable **parents, int numParents,
+		Variable *tableFor, Pot *pot);
+void CPT_Destroy(CPT *this);
+
+BNet *BNet_Create(VariableOrdering *vbls, 
+		  CPT **tables, 
+		  int numTables);
+void BNet_Destory(BNet *this);
+#endif

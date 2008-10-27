@@ -1,0 +1,262 @@
+#include"JB_Inference.h"
+#include"check.h"
+#include<string.h>
+#include<stdlib.h>
+#include<check.h>
+#include<limits.h>
+
+//Globals
+char *jbhome;
+char *dirname;
+/******************************************************************************
+ ******************************************************************************
+ *** Test Setup Code
+ ******************************************************************************
+ *****************************************************************************/
+
+void setup_resource_paths(){
+  char *resPath = "res/test/JB_Inference";
+  jbhome = getenv("JBHOME");
+  dirname = pathJoin(jbhome,resPath);  
+
+}
+
+void setup (void)
+{ 
+   setup_resource_paths();
+}
+
+void teardown (void)
+{
+ 
+}
+
+START_TEST (Test_BNet_StateSpaceWeightedElimOrdering){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_StateSpaceWeightedElimOrdering\n");
+  printf("************************************\n");
+  printf("%s\n",VertexOrdering_ToString(elim_order));
+}END_TEST
+ 
+/* START_TEST (Test_BNet_BuildElimTree){ */
+/*   BNet *bn = BuildSimpleBNet(); */
+/*   VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn); */
+/*   BNet_BuildElimTree(bn, elim_order); */
+/*   char *outFileName = pathJoin(dirname,"BNMoral1Out.dot"); */
+/*   Graph_Write(bn->moral,outFileName); */
+/*   outFileName = pathJoin(dirname,"BNElimTreeTest1Out.dot"); */
+/*   Graph_Write(bn->elimTree,outFileName); */
+/* }END_TEST */
+
+START_TEST (Test_BNet_InitializePotentials){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  BNet_InitializePotentials(bn);
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_InitializePotentials\n");
+  printf("************************************\n");
+  int i;
+  printf("\n************************************\n");
+  printf("Clique Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numCliques; i++){
+    printf("\n%s\n",Pot_ToString(*(bn->cliquePots[i])));
+  }
+  printf("\n************************************\n");
+  printf("Seperator Potentials\n");
+  printf("************************************\n");
+  for(i = 0; i < bn->numSeps; i++){
+    printf("\n %s \n",Pot_ToString(*(bn->seperatorPots[i])));
+  }
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute){
+  BNet *bn = BuildSimpleBNet();
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentials(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute\n");
+  printf("************************************\n");
+  
+  Print_BNet(bn);
+
+  //collect
+  BNet_CollectEvidence(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+
+  //distribute
+  BNet_DistributeEvidence(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute_WithDObs0){
+  BNet *bn = BuildSimpleBNetDObs(0);
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentials(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute_WithDObs0\n");
+  printf("************************************\n");
+  
+  Print_BNet(bn);
+
+  //collect
+  BNet_CollectEvidence(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+
+  //distribute
+  BNet_DistributeEvidence(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute_WithDObs0Log){
+  BNet *bn = BuildSimpleBNetDObsLog(0);
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentialsLog(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute_WithDObs0Log\n");
+  printf("************************************\n");
+  
+  Print_BNetLog(bn);
+
+  //collect
+  BNet_CollectEvidenceLog(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNetLog(bn);
+
+  //distribute
+  BNet_DistributeEvidenceLog(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNetLog(bn);
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute_WithCObs0){
+  BNet *bn = BuildSimpleBNetCObs(0);
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentials(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute_WithCObs0\n");
+  printf("************************************\n");
+  
+  Print_BNet(bn);
+
+  //collect
+  BNet_CollectEvidence(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+
+  //distribute
+  BNet_DistributeEvidence(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+}END_TEST
+
+START_TEST (Test_BNet_CollectDistribute_WithAObs0){
+  BNet *bn = BuildSimpleBNetAObs(0);
+  VertexOrdering *elim_order = BNet_StateSpaceWeightedElimOrdering(bn);
+  BNet_BuildElimTree(bn, elim_order);
+  //initialize
+  BNet_InitializePotentials(bn);
+
+  printf("\n************************************\n");
+  printf("Output from Test_BNet_CollectDistribute_WithAObs0\n");
+  printf("************************************\n");
+  
+  Print_BNet(bn);
+
+  //collect
+  BNet_CollectEvidence(bn);
+
+  printf("\n************************************\n");
+  printf("After Evidence Collection\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+
+  //distribute
+  BNet_DistributeEvidence(bn);
+  printf("\n************************************\n");
+  printf("After Evidence Distribution\n");
+  printf("************************************\n");
+
+  Print_BNet(bn);
+}END_TEST
+
+
+Suite *jt_suite (void)
+{
+  Suite *s = suite_create ("Inference");
+  /* Core test case */
+  TCase *InfCore = tcase_create ("InfCore");
+  tcase_add_checked_fixture (InfCore, setup, teardown);
+/*   tcase_add_test (InfCore, Test_BNet_StateSpaceWeightedElimOrdering); */
+/*   tcase_add_test (InfCore, Test_BNet_BuildElimTree); */
+/*   tcase_add_test (InfCore, Test_BNet_InitializePotentials); */
+//  tcase_add_test (InfCore, Test_BNet_CollectDistribute);
+//  printf("Here we see without the log transform.\n");
+  tcase_add_test (InfCore, Test_BNet_CollectDistribute_WithDObs0);
+  printf("Here we see WITH the log transform.\n");
+  tcase_add_test (InfCore, Test_BNet_CollectDistribute_WithDObs0Log);
+  /*  tcase_add_test (InfCore, Test_BNet_CollectDistribute_WithCObs0);*/
+  /* tcase_add_test (InfCore, Test_BNet_CollectDistribute_WithAObs0); */
+  tcase_set_timeout(InfCore, 0);
+  suite_add_tcase (s, InfCore);
+ 
+  return s;
+}
+
+int main (void){
+  int number_failed;
+  Suite *s = jt_suite();
+  SRunner *sr = srunner_create (s);
+  srunner_run_all (sr, CK_VERBOSE);
+  number_failed = srunner_ntests_failed (sr);
+  srunner_free (sr);
+  return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+}

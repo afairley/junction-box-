@@ -1,0 +1,745 @@
+               :#include "JB_Pot.h"
+               :
+               :VariableSet *VariableSet_Create(VariableOrdering *o){
+               :  VariableSet *ret = (VariableSet*)jballoc(sizeof(VariableSet));
+               :  ret->bv = BitVector_Create(o->size, jballoc,jbfree, 0);
+               :  ret->o = o;
+               :  return ret;
+               :}
+               :VariableSet *VariableSet_CreateFromBv(VariableOrdering *o,BitVector *bv){
+               :  VariableSet *ret = (VariableSet*)jballoc(sizeof(VariableSet));
+               :  ret->bv = bv;
+               :  ret->o = o;
+               :  return ret;
+               :}
+               :
+               :/*Returns true if this is contained in other*/
+               :int VariableSet_ContainedIn(VariableSet *this, VariableSet *other){ /* VariableSet_ContainedIn total:      2  0.1647 */
+     1  0.0824 :  BitVector *test = BitVector_And(this->bv,other->bv,0);
+     1  0.0824 :  int ret = BitVector_Equals(this->bv,test,0);
+               :  BitVector_Destroy(test);
+               :  return ret;
+               :}
+               :
+               :char *VariableSet_GetLabel(VariableSet *this){ /* VariableSet_GetLabel total:      2  0.1647 */
+               :  int i, length = 0;
+               :  char *ret;
+     1  0.0824 :  for(i = 0; i < BitVector_GetSize(this->bv,0); i++){
+               :    if(BitVector_GetBit(this->bv, i))
+               :      length += strlen( Variable_GetLabel(this->o->vbls[i])  ) +1;
+               :    //+1 for space following or NULL in the last case
+               :  }
+               :  ret = jballoc(length * sizeof(char) +1);//+1 for a trailing \n 
+               :  //which will be put there by VariableSetCollection_ToString
+               :  ret[0] = (char)0;
+               :  for(i = 0; i < BitVector_GetSize(this->bv,0); i++){
+     1  0.0824 :    if(BitVector_GetBit(this->bv, i)){
+               :      strcat(ret, Variable_GetLabel(this->o->vbls[i]) );
+               :      strcat(ret, " ");
+               :    }
+               :  }
+               :  return ret;
+               :}
+               :int VariableSet_GetCardinality(VariableSet *this){
+               :  //count the cardinality of the entire space
+               :  int i, ret=1, size=VariableSet_GetSize(this);
+               :  BitVector *bv = this->bv;
+               :  for(i =0 ; i < size;  i++){
+               :    if(BitVector_GetBit(bv, i)){
+               :      int cardinality = this->o->vbls[i]->cardinality;
+               :      ret *= cardinality;
+               :    }
+               :  }
+               :  return ret;
+               :}
+               ://TODO unify nomenclature. ToString for all data structure
+               :char *VariableSet_ToString(VariableSet *this){
+               : return VariableSet_GetLabel(this);
+               :}
+               :
+               ://Add a vertex to an elimination set
+               ://Should have no effect if the vertex is already in the set
+               :void VariableSet_Add(VariableSet *this, Variable *v){
+               :  int indx = VariableOrdering_GetVariableRank(this->o,v);
+               :  if(indx >= 0){
+               :    BitVector_SetBitOn(this->bv,indx,0); 
+               :  }
+               :}
+               ://TODO: Unneeded, remove.
+               :List *VariableSet_GetVariableList(VariableSet *this){
+               :  int i;
+               :  List *ret = List_Create();
+               :  for(i = 0; i < BitVector_GetSize(this->bv,0); i++){
+               :    if(BitVector_GetBit(this->bv, i))
+               :      List_Append(ret,this->o->vbls[i]);
+               :    //+1 for space following or NULL in the last case
+               :  }
+               :  return ret;
+               :}
+               :/** Returns the first Variable (wrt ordering) present in a VblSet
+               : * Added for finidng the Variable an observation is on.  Ugly, will be fixed with
+               : * REFACTOR[0]
+               : */
+               :Variable *VariableSet_GetFstVbl(VariableSet *this){
+               :    int i;  
+               :    for(i = 0; i < BitVector_GetSize(this->bv,0); i++){
+               :      if(BitVector_GetBit(this->bv, i))
+               :	return (this->o->vbls)[i];
+               :    }
+               :    return -1;//ERROR CASE? Generates compiler warning
+               :  }
+               :int VariableSet_GetNumVbls(VariableSet *this){
+               :  return BitVector_GetNumOnBits(this->bv,0);
+               :}
+     1  0.0824 :int VariableSet_GetSize(VariableSet *this){ /* VariableSet_GetSize total:      1  0.0824 */
+               :  return BitVector_GetSize(this->bv,0);
+               :}
+               :
+               :void VariableSet_Destroy(VariableSet *this){
+               :  BitVector_Destroy(this->bv);
+               :  free(this);
+               :}
+               :int *VariableSet_GetVblCardinalities(VariableSet *this){ /* VariableSet_GetVblCardinalities total:      7  0.5766 */
+               :  BitVector *bv = this->bv;
+               :  int numVbls = BitVector_GetNumOnBits(bv,0);
+               :  int size = BitVector_GetSize(bv,0);
+               :  int *ret = jballoc(sizeof(int) * numVbls);
+               :  int i,j;
+     1  0.0824 :  for(i =0, j =0 ; i < size;  i++){
+     3  0.2471 :    if(BitVector_GetBit(bv, i)){
+     3  0.2471 :      int cardinality = this->o->vbls[i]->cardinality;
+               :      ret[j++] = cardinality;
+               :    }
+               :  }
+               :  return ret;
+               :}
+               :
+               :int **VariableSet_EnumerateValues(VariableSet *this, int *cardinalityRet){ /* VariableSet_EnumerateValues total:     12  0.9885 */
+               :  BitVector *bv = this->bv;
+               :  int numVbls = BitVector_GetNumOnBits(bv,0);
+               :  if(numVbls ==  0){
+               :    //We are working with two potentials with the same domain
+               :    *cardinalityRet = 0;
+               :    return NULL;
+               :  }
+               :  int card[numVbls];
+               :  int size = BitVector_GetSize(bv,0);
+               :  int i,j, product = 1, offsetFactor;
+               :  //count the cardinality of the entire space
+     4  0.3295 :  for(i =0, j =0 ; i < size;  i++){
+     1  0.0824 :    if(BitVector_GetBit(bv, i)){
+     1  0.0824 :      int cardinality = this->o->vbls[i]->cardinality;
+     1  0.0824 :      product *= cardinality;
+               :      card[j++] = cardinality;
+               :    }
+               :  }
+               :  int **ret = (int**)jballoc(sizeof(int*)*product);
+               :  for(i = 0; i < product; i++){
+               :    int code = i;
+               :    offsetFactor = product;
+               :    ret[i] = (int*)jballoc(sizeof(int) * numVbls);
+               :    for(j = 0; j <numVbls-1; j++){
+     2  0.1647 :      offsetFactor /= card[j];
+     2  0.1647 :      int quotient = code/(offsetFactor);
+     1  0.0824 :      ret[i][j] = quotient;
+               :      code -= quotient * offsetFactor;
+               :    }
+               :    ret[i][j] = code;//Last index is not multiplied by anything
+               :  }
+               :  *cardinalityRet = product;
+               :  return ret;
+               :}
+               :int VariableSet_ComputeIndex(VariableSet *vbls, int *values){
+               :  BitVector *bv = vbls->bv;
+               :  int numVbls = BitVector_GetNumOnBits(bv,0);
+               :  int card[numVbls];
+               :  int size = BitVector_GetSize(bv,0);
+               :  int i,index, ret = 0, product = 1;
+               :  for(i =0, index =0 ; i < size;  i++){
+               :    if(BitVector_GetBit(bv, i)){
+               :      int cardinality = vbls->o->vbls[i]->cardinality;
+               :      product *= cardinality;
+               :      card[index++] = cardinality;
+               :    }
+               :  }
+               :  for(i = 0; i <numVbls-1; i ++){
+               :    product /= card[i];
+               :    ret += values[i]*(product);
+               :  }
+               :  ret += values[i];//Last index is not multiplied by anything
+               :  return ret;
+               :}
+     1  0.0824 :int *VariableSet_ComputeIndices(VariableSet *vbls, int **values, int numIndices){ /* VariableSet_ComputeIndices total:     48  3.9539 */
+               :  int *ret = (int*)jballoc(sizeof(int) * numIndices);
+               :  BitVector *bv = vbls->bv;
+               :  int numVbls = BitVector_GetNumOnBits(bv,0);
+     1  0.0824 :  int card[numVbls];
+               :  int size = BitVector_GetSize(bv,0);
+     1  0.0824 :  int i,j, product = 1, offsetFactor;
+               :  //count the cardinality of the entire space
+     9  0.7414 :  for(i =0, j =0 ; i < size;  i++){
+     6  0.4942 :    if(BitVector_GetBit(bv, i)){
+     2  0.1647 :      int cardinality = vbls->o->vbls[i]->cardinality;
+               :      product *= cardinality;
+               :      card[j++] = cardinality;
+               :    }
+               :  }
+               :  for(i = 0; i < numIndices; i++){
+               :    offsetFactor = product;
+               :    int *vals = values[i];
+               :    ret[i] = 0;                                        //'optimize' memset
+     3  0.2471 :    for(j = 0; j <numVbls-1; j++){
+    15  1.2356 :      offsetFactor /= card[j];
+     9  0.7414 :      ret[i] += vals[j]*(offsetFactor);
+               :    }
+               :    ret[i] += vals[j];//Last index is not multiplied by anything
+               :  }
+               :  return ret;
+     1  0.0824 :}
+               :
+               :// check if any array index has gone out of bounds 
+               :int check_vbl_indx_bnds(int i, int fstOff, int scndOff,
+               :			int numFstVbls, int numScndVbls){
+               :  if(fstOff >= numFstVbls)
+               :    return 0;
+               :  if(scndOff >= numScndVbls)
+               :    return 0;
+               :  if( i >= (numFstVbls + numScndVbls) )
+               :    return 0;
+               :  return 1;
+               :}
+               :
+               :/** We must order the indices into the potential properly.
+               :
+               :   We are seeking indices of variables just with respect to a particular 
+               :   potential. When the indices come into this function, they are indices 
+               :   of the variables within the entire ordering. We are re-ordering them so
+               :   that they are indices that correspond just to the ranking of the variables 
+               :   with respect to each other.  The transformation is basically this:
+               :   Sort the initial indices, then replace each index with it's position in the 
+               :   sort. For example, if we come in with:
+               :   fstVbls  = {1,3,7,11}
+               :   scndVbls = {2,6,9}
+               :   ->We will leave with
+               :   fstVbls  = {0,2,4,6}
+               :   scndVbls = {1,3,5}
+               :   it's basically a merge sort with a relabelling
+               :*/
+               :void fix_vbls_indices(int *fstVbls, int *scndVbls, 
+               :		      int numFstVbls, int numScndVbls){ /* fix_vbls_indices total:      1  0.0824 */
+               :  int i, fstOff = 0,scndOff = 0;
+               :  for(i = 0; 
+               :      check_vbl_indx_bnds(i,fstOff,scndOff,numFstVbls, numScndVbls);
+               :      i++){
+               :    if(fstVbls[fstOff] < scndVbls[scndOff]){
+     1  0.0824 :      fstVbls[fstOff] = i;
+               :      fstOff++;
+               :    }
+               :    else{
+               :      scndVbls[scndOff] = i;
+               :      scndOff++;
+               :    }
+               :  }
+               :  if(i >= numFstVbls + numScndVbls){
+               :    return;
+               :  }
+               :  if(fstOff >= numFstVbls){
+               :    while(scndOff < numScndVbls)
+               :      scndVbls[scndOff++] = i++;
+               :    return;
+               :  }else{
+               :    while(fstOff < numFstVbls)
+               :      fstVbls[fstOff++] = i++;
+               :    return;
+               :  }
+               :}
+               :
+               ://TODO: Possibly Optimize this by doing arithmetic in mixed radix. 
+               ://      This should save a lot of memory, and reduce time complexity
+               :int** IndexCross(VariableSet *first,
+               :		 int * firstIndices,
+               :		 VariableSet *second,
+               :		 int **secondIndicesSet, 
+               :		 int secondSampleCard){ /* IndexCross total:     45  3.7068 */
+               :  /**number of variables in the entire model*/
+               :  int vblSetSize = VariableSet_GetSize(first);//first and second should ==
+               :  int numFirstVbls = VariableSet_GetNumVbls(first);
+               :  int numSecondVbls = VariableSet_GetNumVbls(second);
+               :  int numTotVbls = numFirstVbls + numSecondVbls;
+     1  0.0824 :  int firstVblsIndices[numFirstVbls];
+               :  int secondVblsIndices[numSecondVbls];
+               :  /**We allocate an array of arrays of as big as the second set's cardinality*/
+               :  int **ret = (int**)jballoc(sizeof(int*)*secondSampleCard);
+               :  int i,j, index =0;
+               :  BitVector *bv = first->bv;
+               :
+               :  /** Find out where our first variables live in the set*/
+     5  0.4119 :  for(i = 0; i < vblSetSize; i++){
+     4  0.3295 :    if( BitVector_GetBit(bv, i))
+               :	firstVblsIndices[index++] = i;
+               :  }
+               :  bv = second->bv;
+               :  index = 0;
+               :  
+               :  /** Find out where our second variables live in the set*/
+     5  0.4119 :  for(i = 0; i < vblSetSize; i++){
+     5  0.4119 :    if( BitVector_GetBit(bv, i) )
+     1  0.0824 :      secondVblsIndices[index++] = i;
+               :  }
+               :
+               :  fix_vbls_indices(firstVblsIndices,secondVblsIndices,
+               :		   numFirstVbls, numSecondVbls);
+               :
+     1  0.0824 :  for(i = 0; i < secondSampleCard; i++){
+     1  0.0824 :    ret[i] = jballoc(numTotVbls * sizeof(int) );
+     4  0.3295 :    for(j = 0; j <numFirstVbls; j++){
+     3  0.2471 :      ret[i][firstVblsIndices[j]] = firstIndices[j];
+               :    } 
+     5  0.4119 :    for(j = 0; j <numSecondVbls; j++){
+    10  0.8237 :      ret[i][secondVblsIndices[j]] = secondIndicesSet[i][j];
+               :    }
+               :  }
+               :  return ret;
+               :}
+               ://TODO There's a bug in Compute_*Ind where we make a mistake if
+               ://TODO this == target.  This is a workaround(indirect and MulInd_CreateId)
+               :int *indirect(int i){
+               :  int *ret = jballoc(sizeof(int));
+               :  *ret = i;
+               :  return ret;
+               :}
+               :
+               :MulInd *MulInd_CreateIdentity(VariableSet *target){
+               :  int i;
+               : MulInd *ret = jballoc(sizeof(MulInd));  
+               :  ret->vbls = target;
+               :  ret->firstIndices = VariableSet_GetCardinality(target);
+               :  ret->mulSize = 1;
+               :  int **sumIndices = (int**)jballoc(sizeof(int*)*ret->firstIndices);
+               :  for(i = 0; i < ret->firstIndices; i++){
+               :    sumIndices[i] = indirect(i);
+               :  }
+               :  ret->secondIndices = sumIndices;
+               :  return ret;
+               :}
+               :
+               ://TODO A whole lot of freeing needs to happen here.
+               :MulInd *VariableSet_ComputeMargInd(VariableSet *this,
+               :			      VariableSet *target){
+               :  BitVector *margBits = BitVector_Xor(this->bv,target->bv,0);
+               :  VariableSet *margVars =VariableSet_CreateFromBv(this->o,margBits);
+               :  int i,j;
+               :  int sumCardinality, newPotCardinality;
+               :  int **margIndices = VariableSet_EnumerateValues(margVars,&sumCardinality);
+               :
+               :  if(sumCardinality == 0 ){
+               :    return NULL;
+               :  }
+               :
+               :  int **newPotIndices = VariableSet_EnumerateValues(target,
+               :						    &newPotCardinality);
+               :  int **sumIndices = (int**)jballoc(sizeof(int*)*newPotCardinality);
+               :
+               :  for(i = 0; i < newPotCardinality; i++){
+               :    int **margin = IndexCross(target,newPotIndices[i],margVars,
+               :			      margIndices,sumCardinality);
+               :    sumIndices[i] = VariableSet_ComputeIndices(this,margin,sumCardinality);
+               :    for(j = 0; j <sumCardinality; j++){
+               :      jbfree(margin[j]);
+               :    }
+               :    jbfree(margin);
+               :  }
+               :
+               :  MulInd *ret = jballoc(sizeof(MulInd));  
+               :  ret->vbls = margVars;
+               :  ret->firstIndices = newPotCardinality;
+               :  ret->mulSize = sumCardinality;
+               :  ret->secondIndices = sumIndices;
+               :  for(j=0; j < newPotCardinality; j++){
+               :    jbfree(newPotIndices[j]);
+               :  }
+               :  jbfree(newPotIndices);
+               :  for(j=0; j < sumCardinality; j++){
+               :    jbfree(margIndices[j]);
+               :  }
+               :  jbfree(margIndices);
+               :  return ret;
+               :}
+               :
+               ://TODO A whole lot of freeing needs to happen here.
+               ://Also add duplicate logic from computeMargInd for this == target
+               :MulInd *VariableSet_ComputeMulInd(VariableSet *this/*a sepset*/,
+               :			      VariableSet *target
+               :			      /*the variables belonging 
+               :				to the clique 
+               :				which this will be multiplied by*/){ /* VariableSet_ComputeMulInd total:      1  0.0824 */
+               :  BitVector *itrBits = BitVector_Xor(this->bv,target->bv,0);
+               :  VariableSet *itrVars =VariableSet_CreateFromBv(this->o,itrBits);
+               :  int i;
+               :  int itrCardinality, thisCardinality;
+               :  int **itrIndices = VariableSet_EnumerateValues(itrVars
+               :						 ,&itrCardinality);
+               :  int **thisIndices = VariableSet_EnumerateValues(this,
+               :						    &thisCardinality);
+               :  int **targetIndices = (int**)jballoc(sizeof(int*)*thisCardinality);
+               :  for(i = 0; i < thisCardinality; i++){
+               :    int **targets = IndexCross(this,thisIndices[i],itrVars,
+               :			      itrIndices,itrCardinality);
+     1  0.0824 :    targetIndices[i] = VariableSet_ComputeIndices(target,targets,
+               :						  itrCardinality);
+               :    //TODO free targets
+               :  }
+               :  
+               :  MulInd *ret = jballoc(sizeof(MulInd)); 
+               :  ret->vbls = this;//store the sepset vbls so this can easily be inverted
+               :  ret->firstIndices = thisCardinality;
+               :  ret->mulSize = itrCardinality;
+               :  ret->secondIndices = targetIndices;
+               :  //TODO free *Indices
+               :  return ret; 
+               :}
+               :
+               :
+               :MulMemo *MulMemo_Create(){
+               :  MulMemo *ret = (MulMemo*)jballoc(sizeof(MulMemo));
+               :  ret->bvm = BitVectorMap_Create();
+               :  return ret;
+               :}
+               :
+               :void MulMemo_Destroy(MulMemo *mm){
+               :  jbfree(mm->bvm);
+               :  jbfree(mm);
+               :}
+               :
+               :MulInd *MulMemo_GetMulInd(MulMemo *this, VariableSet *vbls,
+               :			     VariableSet *target){
+               :  MulInd *ret;
+               :  BitVector *bv = target->bv;
+               :  BitVectorMap_Element  *me = (BitVectorMap_Element*)BitVectorMap_Get(
+               :						                this->bvm,
+               :								bv);
+               :  if(me == NULL){
+               :    ret = VariableSet_ComputeMulInd(vbls,target);
+               :    BitVectorMap_Add(this->bvm,bv, ret);
+               :  }else{
+               :    ret = (MulInd*)me->contents;
+               :  }
+               :  return ret;
+               :}
+               :
+               :MulInd *MulMemo_GetMargInd(MargMemo *this, VariableSet *vbls,
+               :			     VariableSet *target){
+               :  BitVector *bv = target->bv;
+               :  MulInd *ret;
+               :  BitVectorMap_Element  *me = (BitVectorMap_Element*)BitVectorMap_Get(
+               :                                                                 this->bvm,
+               :								 bv);
+               :  if(me == NULL){
+               :    ret = VariableSet_ComputeMargInd(vbls,target);
+               :    BitVectorMap_Add(this->bvm,bv, ret);
+               :  }else{
+               :    ret = (MulInd*)me->contents;
+               :  }
+               :  return ret;
+               :}
+               :
+               :MulInd *MulMemo_Has(MulMemo *this, VariableSet *target){
+               :  BitVector *bv = target->bv;
+               :  MulInd *ret = (MulInd*)BitVectorMap_Get(this->bvm,bv);
+               :  return ret;
+               :}
+               :
+               :/***********************************************************************
+               : *** Pot : Potentials implementation
+               : ***********************************************************************/
+               :
+               :PotType inferTypeFromVbls(VariableSet *vbls){
+               :  //TODO When continuous variables are implemented, actually infer things
+               :  return TABULAR;
+               :}
+               :
+               :Pot *Pot_CreateTabular(char *label,
+               :			VariableSet *vbls,
+               :			double *valueData){
+               :  Pot *ret = jballoc(sizeof(Pot));
+               :  ret->label = label;
+               :  ret->vbls = vbls;
+               :  ret->type = TABULAR;
+               :  ret->valueData.tabData = valueData;
+               :  int i, numVbls, product = 1, *cardinalities;
+               :  numVbls = VariableSet_GetNumVbls(vbls);
+               :  cardinalities =  VariableSet_GetVblCardinalities(vbls);
+               :  for(i =0; i < numVbls; i++){
+               :    product *= cardinalities[i];
+               :  }
+               :  jbfree(cardinalities);
+               :  ret->tableSize = product;
+               :  return ret;
+               :}
+               :
+               :Pot *Pot_CreateTabularUnity(char *label,
+               :			VariableSet *vbls){
+               :  Pot *ret = jballoc(sizeof(Pot));
+               :  ret->label = label;
+               :  ret->vbls = vbls;
+               :  ret->type = TABULAR;
+               :  int i, numVbls, product = 1, *cardinalities;
+               :  numVbls = VariableSet_GetNumVbls(vbls);
+               :  cardinalities =  VariableSet_GetVblCardinalities(vbls);
+               :  for(i =0; i < numVbls; i++){
+               :    product *= cardinalities[i];
+               :  }
+               :  jbfree(cardinalities);
+               :  ret->tableSize = product;
+               :  ret->valueData.tabData = jballoc(sizeof(double)*product);
+               :  for(i = 0; i < product; i ++){
+               :    ret->valueData.tabData[i] = 1.0;
+               :  }
+               :  return ret;
+               :}
+               :
+               :Pot *Pot_CreateTabularUnityLog(char *label,
+               :			VariableSet *vbls){
+               :  Pot *ret = jballoc(sizeof(Pot));
+               :  ret->label = label;
+               :  ret->vbls = vbls;
+               :  ret->type = TABULAR;
+               :  int i, numVbls, product = 1, *cardinalities;
+               :  numVbls = VariableSet_GetNumVbls(vbls);
+               :  cardinalities =  VariableSet_GetVblCardinalities(vbls);
+               :  for(i =0; i < numVbls; i++){
+               :    product *= cardinalities[i];
+               :  }
+               :  jbfree(cardinalities);
+               :  ret->tableSize = product;
+               :  ret->valueData.tabData = jballoc(sizeof(double)*product);
+               :  for(i = 0; i < product; i ++){
+               :    ret->valueData.tabData[i] = 0.0;
+               :  }
+               :  return ret;
+               :}
+               :
+               :Pot *Pot_CreateTabularUnInit(char *label,
+               :			VariableSet *vbls){
+               :  Pot *ret = jballoc(sizeof(Pot));
+               :  ret->label = label;
+               :  ret->vbls = vbls;
+               :  ret->type = TABULAR;
+               :  int i, numVbls, product = 1, *cardinalities;
+               :  numVbls = VariableSet_GetNumVbls(vbls);
+               :  cardinalities =  VariableSet_GetVblCardinalities(vbls);
+               :  for(i =0; i < numVbls; i++){
+               :    product *= cardinalities[i];
+               :  }
+               :  jbfree(cardinalities);
+               :  ret->tableSize = product;
+               :  ret->valueData.tabData = jballoc(sizeof(double)*product);
+               :  return ret;
+               :}		
+               :
+               :void Pot_DestroyTabular(Pot *this){
+               :  jbfree(this->label);
+               :  jbfree(this->valueData.tabData);
+               :  //Vbls gets reused a lot , so don't free it 
+               :  //RefCounting is the thing needed, 
+               :  //VariableSet_Destroy(this->vbls);
+               :  jbfree(this);
+               :}
+               :
+               :/*Evaluates a Potential at the specified values
+               : They should of course be ordered consistently with the variable
+               : ordering underlying the VariableSet in the pot*/
+               :double Pot_EvaluateTabular(Pot *this, int *values){
+               :  double ret;
+               :  //TODO Switch on PotType
+               :  {
+               :    int index = VariableSet_ComputeIndex(this->vbls,values);
+               :    ret = this->valueData.tabData[index];
+               :  }
+               :  return ret;
+               :}
+               :
+               :/*Returns a pointer to a potential representing the sum of the passed
+               : in potentials. The second potential is mutated, and it is a pointer
+               : to it which is returned
+               : <this is unneeded for our current work>
+               :Pot *Pot_Sum(Pot *p, Pot *q, IndexMap *im);
+               :*/
+               :
+               :/*Returns a pointer to a potential representing the product of the passed
+               : in potentials The second potential, <q> is mutated, and it is a pointer
+               : to it which is returned.  Indices not mentioned in <mi> are left unaltered.*/
+               :Pot *Pot_ProductTabular(Pot *p, Pot *q, MulInd *mi){
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = (double*)q->valueData.tabData;
+               :  int i, j;
+               :  if(mi != NULL){
+               :    int **qindices = mi->secondIndices;
+               :    for(i =0; i < mi->firstIndices; i++){
+               :      for(j =0; j < mi->mulSize; j++){
+               :	int qindex = qindices[i][j];
+               :	qvalues[qindex] = pvalues[i]*qvalues[qindex];
+               :      }
+               :    }
+               :  }
+               :  else{
+               :    for(i = 0; i < p->tableSize; i++){
+               :    	qvalues[i] = pvalues[i]*qvalues[i];
+               :    }
+               :  }
+               :  return q;
+               :}
+               :
+               :Pot *Pot_ProductTabularLog(Pot *p, Pot *q, MulInd *mi){ /* Pot_ProductTabularLog total:      3  0.2471 */
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = (double*)q->valueData.tabData;
+               :  int i, j;
+               :  if(mi != NULL){
+               :    int **qindices = mi->secondIndices;
+               :    for(i =0; i < mi->firstIndices; i++){
+               :      for(j =0; j < mi->mulSize; j++){
+               :	int qindex = qindices[i][j];
+     3  0.2471 :	qvalues[qindex] = pvalues[i]+qvalues[qindex];
+               :      }
+               :    }
+               :  }
+               :  else{
+               :    for(i = 0; i < p->tableSize; i++){
+               :    	qvalues[i] = pvalues[i]+qvalues[i];
+               :    }
+               :  }
+               :  return q;
+               :}
+               :
+               :/*Returns a pointer to a potential representing the quotient of the passed
+               : in potentials
+               : <this is unneeded for our current work>
+               :Pot *Pot_Quotient(Pot *dividend, Pot *divisor, IndexMap *im);
+               : */
+               :
+               :/*Quotient optimized for when a potential is being divided by a new
+               : version of itself. Returns a freshly allocated potential with a ptr to the old potential's memoization structures*/
+               :Pot *Pot_UpdateRatioTabular(Pot *newSep, Pot *oldSep){
+               :  Pot *ret = Pot_CreateTabularUnInit(newSep->label,newSep->vbls);
+               :  int i;
+               :  for( i = 0; i < newSep->tableSize; i++) {
+               :    if(oldSep->valueData.tabData[i] !=0)
+               :      ret->valueData.tabData[i] = 
+               :	(newSep->valueData.tabData[i])/(oldSep->valueData.tabData[i]);
+               :    else
+               :      ret->valueData.tabData[i] = 0;
+               :  }
+               :  return ret;
+               :}
+               :
+               :/*Quotient optimized for when a potential is being divided by a new
+               : version of itself. Returns a freshly allocated potential with a ptr to the old potential's memoization structures*/
+               :Pot *Pot_UpdateRatioTabularLog(Pot *newSep, Pot *oldSep){
+               :  Pot *ret = Pot_CreateTabularUnInit(newSep->label,newSep->vbls);
+               :  int i;
+               :  for( i = 0; i < newSep->tableSize; i++) {
+               :    ret->valueData.tabData[i] = 
+               :      (newSep->valueData.tabData[i])-(oldSep->valueData.tabData[i]);
+               :  }
+               :  return ret;
+               :}
+               :
+               :/*Returns a freshly allocated potential representing the sum-margin
+               : onto the variables  specified in MulInd.*/
+               :Pot *Pot_SumMarginTabular(Pot *p, MulInd *mi){
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = jballoc(sizeof(double)*mi->firstIndices);
+               :  int i, j;
+               :  int **pindices = mi->secondIndices;
+               :  for(i =0; i < mi->firstIndices; i++){
+               :    qvalues[i] = 0; //'optimize' memset 
+               :    for(j =0; j < mi->mulSize; j++){
+               :      int pindex = pindices[i][j];
+               :      qvalues[i] += pvalues[pindex];
+               :    }
+               :  }//TODO consider mangling label
+               :  Pot *ret = Pot_CreateTabular(VariableSet_GetLabel(mi->vbls),
+               :			       mi->vbls, qvalues);
+               :  return ret;
+               :}
+               :
+               :Pot *Pot_SumMarginTabularLog(Pot *p, MulInd *mi){ /* Pot_SumMarginTabularLog total:      1  0.0824 */
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = jballoc(sizeof(double)*mi->firstIndices);
+               :  int i, j;
+               :  int **pindices = mi->secondIndices;
+               :  for(i =0; i < mi->firstIndices; i++){
+               :    qvalues[i] = 0; //'optimize' memset 
+               :    for(j =0; j < mi->mulSize; j++){
+     1  0.0824 :      int pindex = pindices[i][j];
+               :      // if(pvalues[pindex] != 0)//0 indicates 0 probability
+               :	qvalues[i] += exp(pvalues[pindex]);
+               :    }
+               :    qvalues[i] = log(qvalues[i]);
+               :  }//TODO consider mangling label
+               :  Pot *ret = Pot_CreateTabular(VariableSet_GetLabel(mi->vbls),
+               :			       mi->vbls, qvalues);
+               :  return ret;
+               :}
+               :
+               ://Returns a double * with v->cardinality values
+               :double *Pot_SumMarginTabularSingleVbl(Pot *p, Variable *v){
+               :
+               :  VariableSet *vs = VariableSet_Create(p->vbls->o);
+               :  VariableSet_Add(vs,v);
+               :  MulInd *mi = VariableSet_ComputeMargInd(p->vbls,vs);
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = jballoc(sizeof(double)*mi->firstIndices);
+               :  int i, j;
+               :  int **pindices = mi->secondIndices;
+               :  for(i =0; i < mi->firstIndices; i++){
+               :    qvalues[i] = 0; //'optimize' memset 
+               :    for(j =0; j < mi->mulSize; j++){
+               :	int pindex = pindices[i][j];
+               :	qvalues[i] += pvalues[pindex];
+               :    }
+               :  }//TODO consider mangling label
+               :  
+               :  VariableSet_Destroy(vs);
+               :  return qvalues;
+               :} 
+               :
+               :double *Pot_SumMarginTabularSingleVblLog(Pot *p, Variable *v){
+               :
+               :  VariableSet *vs = VariableSet_Create(p->vbls->o);
+               :  VariableSet_Add(vs,v);
+               :  MulInd *mi = VariableSet_ComputeMargInd(p->vbls,vs);
+               :  double *pvalues = (double*)p->valueData.tabData;
+               :  double *qvalues = jballoc(sizeof(double)*mi->firstIndices);
+               :  int i, j;
+               :  int **pindices = mi->secondIndices;
+               :  for(i =0; i < mi->firstIndices; i++){
+               :    qvalues[i] = 0; //'optimize' memset 
+               :    for(j =0; j < mi->mulSize; j++){
+               :	int pindex = pindices[i][j];
+               :	qvalues[i] += exp(pvalues[pindex]);
+               :    }
+               :    qvalues[i] = log(qvalues[i]); 
+               :  }//TODO consider mangling label
+               :  
+               :  VariableSet_Destroy(vs);
+               :  return qvalues;
+               :} 
+               :
+/* 
+ * Total samples for file : "/home/afairley/Documents/Projects/JunctionBox_noGraphviz/src/components/JB_Pot/JB_Pot.c"
+ * 
+ *    123 10.1318
+ */
+
+
+/* 
+ * Command line: opannotate --source -o opannotate/ libjunctionbox.so 
+ * 
+ * Interpretation of command line:
+ * Output annotated source file with samples
+ * Output all files
+ * 
+ * CPU: Core 2, speed 2200 MHz (estimated)
+ * Counted CPU_CLK_UNHALTED events (Clock cycles when not halted) with a unit mask of 0x00 (Unhalted core cycles) count 100000
+ */

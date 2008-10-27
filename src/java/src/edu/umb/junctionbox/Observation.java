@@ -1,0 +1,7 @@
+package edu.umb.junctionbox;
+/**A container class for Observations*/
+public class Observation{
+    public String variable;
+    public int value;
+    public SWIGTYPE_p_Observation pointer;
+}

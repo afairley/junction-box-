@@ -1,0 +1,48 @@
+#ifndef H_JB_INFER
+#define H_JB_INFER
+#include "JB_Model.h"
+#include "JB_JunctionTree.h"
+#include <math.h>
+typedef struct evidence Evidence;
+typedef struct vertex_set VertexSet;
+
+struct evidence{
+};
+
+struct vertex_set{
+  BitVector *bv;
+  VertexOrdering *o;
+};
+
+
+VertexSet *VertexSet_Create();
+void VertexSet_Destroy(VertexSet *this);
+int VertexSet_Contains(VertexSet *this, VertexSet *other);
+int VertexSet_ContainsVertex(VertexSet *this, Vertex *v);
+void VertexSet_Add(VertexSet *this, Vertex *v);
+char *VertexSet_ToString(VertexSet *this);
+
+VertexOrdering *BNet_StateSpaceWeightedElimOrdering(BNet *this);
+
+void BNet_BuildElimTree(BNet *this, VertexOrdering *o);
+void BNet_InitializePotentials(BNet *this);
+void BNet_InitializePotentialsLog(BNet *this);
+void BNet_EnterEvidence(BNet *this, Evidence *e);
+void BNet_ComputeSumMarginals(BNet *this);
+void BNet_CollectEvidence(BNet *this);
+void BNet_DistributeEvidence(BNet *this);
+void BNet_CollectEvidenceLog(BNet *this);
+void BNet_DistributeEvidenceLog(BNet *this);
+List *BNet_AllContClqPot(BNet *this, Variable *vbl);
+//added for simple SWIG testing. REMOVE
+BNet *BuildSimpleBNet();
+BNet *BuildSimpleBNetCObs(int val);
+BNet *BuildSimpleBNetDObs(int val);
+BNet *BuildSimpleBNetDObsLog(int val);
+BNet *BuildSimpleBNetAObs(int val);
+void Print_BNet(BNet *bn);
+void Print_BNetLog(BNet *bn);
+char *MulInd_ToString(MulInd *this);
+char *Pot_ToString(Pot *this);
+char *Pot_ToStringLog(Pot *this);
+#endif
